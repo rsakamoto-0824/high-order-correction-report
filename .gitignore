@@ -1,0 +1,18 @@
+.DS_Store
+.env
+.env.local
+
+# 再生成できる計算結果・生成物（sim/run_all.m と LaTeX で作り直せる）
+results/simulation_results.mat
+results/run_log.txt
+overleaf_upload.zip
+report/main.pdf
+
+# LaTeX の中間ファイル
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz

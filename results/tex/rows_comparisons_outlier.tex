@@ -1,0 +1,24 @@
+事前削除（L1併用） & ASML-VIF L1 & ASML L1 & 0.488 & 0.501 & +2.4 & 57.8 \\
+ & ASML-VIF Huber+L1 & ASML Huber+L1 & 0.194 & 0.192 & -0.9 & 52.0 \\
+ & Nikon-VIF L1 & Nikon L1 & 0.483 & 0.505 & +4.5 & 76.6 \\
+ & Nikon-VIF Huber+L1 & Nikon Huber+L1 & 0.197 & 0.191 & -3.7 & 33.3 \\
+\midrule
+L2とL1（削除後） & ASML-VIF L2 & ASML-VIF L1 & 0.509 & 0.488 & -4.1 & 29.5 \\
+ & ASML-VIF Huber+L2 & ASML-VIF Huber+L1 & 0.178 & 0.194 & +7.9 & 70.1 \\
+ & Nikon-VIF L2 & Nikon-VIF L1 & 0.504 & 0.483 & -4.4 & 31.1 \\
+ & Nikon-VIF Huber+L2 & Nikon-VIF Huber+L1 & 0.185 & 0.197 & +6.1 & 68.8 \\
+\midrule
+L2とL1（削除前） & ASML Huber+L2 & ASML Huber+L1 & 0.171 & 0.192 & +10.8 & 75.6 \\
+ & Nikon Huber+L2 & Nikon Huber+L1 & 0.184 & 0.191 & +3.3 & 57.8 \\
+\midrule
+ロバスト回帰 & ASML Huber & ASML OLS & 0.186 & 0.603 & +69.2 & 89.3 \\
+ & ASML-VIF Huber & ASML-VIF OLS & 0.188 & 0.569 & +67.0 & 89.7 \\
+ & Nikon Huber & Nikon OLS & 0.324 & 1.024 & +68.3 & 90.2 \\
+ & Nikon-VIF Huber & Nikon-VIF OLS & 0.197 & 0.577 & +65.8 & 90.3 \\
+ & ASML-VIF Huber+L2 & ASML-VIF L2 & 0.178 & 0.509 & +65.0 & 89.6 \\
+ & Nikon-VIF Huber+L2 & Nikon-VIF L2 & 0.185 & 0.504 & +63.2 & 89.5 \\
+\midrule
+事前削除（正則化なし） & ASML-VIF OLS & ASML OLS & 0.569 & 0.603 & +5.6 & 76.2 \\
+ & Nikon-VIF OLS & Nikon OLS & 0.577 & 1.024 & +43.6 & 99.6 \\
+ & ASML-VIF Huber & ASML Huber & 0.188 & 0.186 & -1.1 & 56.8 \\
+ & Nikon-VIF Huber & Nikon Huber & 0.197 & 0.324 & +39.2 & 98.4 \\

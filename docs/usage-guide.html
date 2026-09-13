@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高次補正レポート 利用手順（シミュレーション・Overleaf編集）</title>
+<style>
+  :root {
+    /* 色: アクセント1色＋意味のある色（危険・注意・成功）だけに絞る */
+    --color-bg: #f5f7fa;
+    --color-card: #ffffff;
+    --color-text: #1f2933;
+    --color-muted: #52606d;
+    --color-border: #d9e2ec;
+    --color-accent: #0b5cad;
+    --color-accent-soft: #e6f0fa;
+    --color-nav-bg: #102a43;
+    --color-nav-text: #d9e2ec;
+    --color-nav-active: #243b53;
+    --color-danger: #b42318;
+    --color-danger-bg: #fdecea;
+    --color-caution: #7a4f00;
+    --color-caution-bg: #fff4d6;
+    --color-success: #1b6e3a;
+    --color-success-bg: #e6f4ea;
+    --color-code-bg: #eef2f6;
+
+    /* 文字サイズ: 14 / 16 / 18 / 22 / 28 px */
+    --font-small: 0.875rem;
+    --font-body: 1rem;
+    --font-h3: 1.125rem;
+    --font-h2: 1.375rem;
+    --font-h1: 1.75rem;
+
+    /* 余白: 4の倍数 */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+
+    --toc-width: 280px;
+    --content-max: 880px;
+    --radius: 8px;
+    --topbar-height: 56px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+    font-size: var(--font-body);
+    line-height: 1.7;
+  }
+
+  a { color: var(--color-accent); }
+
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: var(--space-4);
+    top: -100px;
+    z-index: 200;
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-card);
+    color: var(--color-accent);
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius);
+  }
+
+  .skip-link:focus { top: var(--space-4); }
+
+  /* ===== 左の目次 ===== */
+  #toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--toc-width);
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--color-nav-bg);
+    color: var(--color-nav-text);
+    padding: var(--space-5) var(--space-4) var(--space-7);
+    z-index: 120;
+  }
+
+  #toc .toc-title {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-small);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+  }
+
+  #toc .toc-lead {
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: var(--font-small);
+    line-height: 1.6;
+  }
+
+  #toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  #toc li { margin: 0; }
+
+  #toc a {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-left: 4px solid transparent;
+    border-radius: 4px;
+    color: var(--color-nav-text);
+    text-decoration: none;
+    font-size: var(--font-small);
+    line-height: 1.5;
+  }
+
+  #toc > nav > ol > li > a {
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: var(--space-2);
+  }
+
+  #toc ol ol a { padding-left: var(--space-5); }
+
+  #toc a:hover { background: var(--color-nav-active); }
+
+  #toc a[aria-current="true"] {
+    background: var(--color-nav-active);
+    border-left-color: #8fc1f2;
+    color: #ffffff;
+  }
+
+  #toc :focus-visible { outline-color: #8fc1f2; }
+
+  #toc-close { display: none; }
+
+  /* ===== 本文 ===== */
+  main {
+    margin-left: var(--toc-width);
+    padding: 0 var(--space-6) var(--space-7);
+  }
+
+  .wrap {
+    max-width: var(--content-max);
+    margin: 0 auto;
+  }
+
+  header.hero {
+    margin: 0 calc(-1 * var(--space-6)) var(--space-6);
+    padding: var(--space-7) var(--space-6) var(--space-6);
+    background: var(--color-card);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .kicker {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: var(--color-accent);
+    letter-spacing: 0.08em;
+  }
+
+  h1 {
+    margin: 0 0 var(--space-4);
+    font-size: var(--font-h1);
+    line-height: 1.4;
+  }
+
+  h2 {
+    margin: var(--space-7) 0 var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-border);
+    font-size: var(--font-h2);
+    line-height: 1.4;
+    scroll-margin-top: var(--space-5);
+  }
+
+  h3 {
+    margin: var(--space-6) 0 var(--space-3);
+    font-size: var(--font-h3);
+    line-height: 1.5;
+    scroll-margin-top: var(--space-5);
+  }
+
+  p { margin: 0 0 var(--space-4); }
+
+  ul, ol { margin: 0 0 var(--space-4); padding-left: 1.5em; }
+
+  li { margin-bottom: var(--space-2); }
+
+  .meta {
+    margin: 0;
+    font-size: var(--font-small);
+    color: var(--color-muted);
+  }
+
+  code {
+    padding: 2px 6px;
+    background: var(--color-code-bg);
+    border-radius: 4px;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.875em;
+  }
+
+  /* 手順（番号付き） */
+  ol.steps {
+    list-style: none;
+    counter-reset: step;
+    padding-left: 0;
+  }
+
+  ol.steps > li {
+    counter-increment: step;
+    position: relative;
+    margin-bottom: var(--space-4);
+    padding-left: 44px;
+  }
+
+  ol.steps > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: var(--font-small);
+    line-height: 30px;
+    text-align: center;
+  }
+
+  /* 全体の流れ */
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+    margin: 0 0 var(--space-5);
+    padding: 0;
+    list-style: none;
+  }
+
+  .flow li {
+    margin: 0;
+    padding: var(--space-4);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-top: 4px solid var(--color-accent);
+    border-radius: var(--radius);
+  }
+
+  .flow .flow-step {
+    display: block;
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  .flow strong { display: block; margin: var(--space-1) 0; }
+
+  .flow span.flow-detail {
+    display: block;
+    font-size: var(--font-small);
+    color: var(--color-muted);
+  }
+
+  /* 注意書き: 色だけでなく必ずラベル文字を付ける */
+  .callout {
+    margin: var(--space-5) 0;
+    padding: var(--space-4) var(--space-5);
+    border-left: 4px solid;
+    border-radius: var(--radius);
+  }
+
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+
+  .callout .callout-label {
+    display: inline-block;
+    margin-bottom: var(--space-2);
+    padding: 2px var(--space-3);
+    border-radius: 999px;
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .callout.point { background: var(--color-accent-soft); border-color: var(--color-accent); }
+  .callout.point .callout-label { background: var(--color-accent); }
+  .callout.caution { background: var(--color-caution-bg); border-color: #b7791f; }
+  .callout.caution .callout-label { background: var(--color-caution); }
+  .callout.danger { background: var(--color-danger-bg); border-color: var(--color-danger); }
+  .callout.danger .callout-label { background: var(--color-danger); }
+  .callout.success { background: var(--color-success-bg); border-color: var(--color-success); }
+  .callout.success .callout-label { background: var(--color-success); }
+
+  /* 表 */
+  .table-scroll {
+    margin: 0 0 var(--space-5);
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+    background: var(--color-card);
+    font-size: 0.9375rem;
+  }
+
+  caption {
+    padding: 0 0 var(--space-2);
+    text-align: left;
+    font-weight: 700;
+  }
+
+  th, td {
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  thead th {
+    background: #e3eaf2;
+    font-weight: 700;
+  }
+
+  tbody tr:nth-child(even) { background: #fafbfc; }
+
+  /* コード */
+  .code-block {
+    margin: 0 0 var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-code-bg);
+    overflow: hidden;
+  }
+
+  .code-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+    background: #dde5ee;
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: var(--color-muted);
+  }
+
+  .copy-btn {
+    min-width: 88px;
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border: 1px solid var(--color-accent);
+    border-radius: 6px;
+    background: var(--color-card);
+    color: var(--color-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .copy-btn:hover { background: var(--color-accent-soft); }
+
+  .code-block pre {
+    margin: 0;
+    padding: var(--space-4);
+    overflow-x: auto;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: var(--font-small);
+    line-height: 1.6;
+  }
+
+  .code-block pre code {
+    padding: 0;
+    background: none;
+    font-size: inherit;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* ===== トップへ戻るボタン（右下） ===== */
+  #to-top {
+    position: fixed;
+    right: var(--space-5);
+    bottom: var(--space-5);
+    z-index: 100;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 48px;
+    padding: 0 var(--space-4);
+    border: none;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease;
+  }
+
+  #to-top.is-visible { opacity: 1; visibility: visible; }
+  #to-top:hover { background: #084a8c; }
+
+  /* ===== 狭い画面用の上部バーと目次の開閉 ===== */
+  .topbar { display: none; }
+  #toc-backdrop { display: none; }
+
+  @media (max-width: 960px) {
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 110;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      height: var(--topbar-height);
+      padding: 0 var(--space-4);
+      background: var(--color-nav-bg);
+      color: #ffffff;
+    }
+
+    .topbar-title {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: var(--font-small);
+      font-weight: 700;
+    }
+
+    #toc-toggle {
+      flex: none;
+      min-width: 72px;
+      min-height: 44px;
+      padding: 0 var(--space-3);
+      border: 1px solid #8fc1f2;
+      border-radius: 6px;
+      background: transparent;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #toc {
+      width: min(86vw, 320px);
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition: transform 0.25s ease, visibility 0.25s;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 開くときは即座に表示して、閉じるボタンへフォーカスを移せるようにする */
+    body.toc-open #toc {
+      transform: translateX(0);
+      visibility: visible;
+      transition: transform 0.25s ease, visibility 0s;
+    }
+
+    #toc-close {
+      display: inline-block;
+      min-width: 88px;
+      min-height: 44px;
+      margin-bottom: var(--space-4);
+      border: 1px solid #8fc1f2;
+      border-radius: 6px;
+      background: transparent;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    body.toc-open #toc-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 115;
+      background: rgba(16, 42, 67, 0.5);
+    }
+
+    main { margin-left: 0; padding: 0 var(--space-4) 112px; }
+    header.hero { margin: 0 calc(-1 * var(--space-4)) var(--space-5); padding: var(--space-6) var(--space-4) var(--space-5); }
+    h2, h3 { scroll-margin-top: calc(var(--topbar-height) + var(--space-4)); }
+    .flow { grid-template-columns: 1fr 1fr; }
+    #to-top { right: var(--space-4); bottom: var(--space-4); }
+  }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 1.375rem; }
+    .flow { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    #toc, #to-top, .topbar, .copy-btn { display: none !important; }
+    main { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-title">本文へスキップ</a>
+
+<div class="topbar">
+  <button type="button" id="toc-toggle" aria-controls="toc" aria-expanded="false">目次</button>
+  <span class="topbar-title">高次補正レポート 利用手順</span>
+</div>
+
+<aside id="toc" aria-label="目次">
+  <button type="button" id="toc-close">閉じる</button>
+  <p class="toc-title">目次</p>
+  <p class="toc-lead">高次補正レポート 利用手順<br>シミュレーション・Overleaf編集</p>
+  <nav>
+    <ol>
+      <li><a href="#sec-overview">1. この手順書でできること</a>
+        <ol>
+          <li><a href="#overview-flow">1.1 全体の流れ</a></li>
+          <li><a href="#overview-folders">1.2 フォルダ構成</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-prepare">2. 準備</a>
+        <ol>
+          <li><a href="#prepare-tools">2.1 必要なもの</a></li>
+          <li><a href="#prepare-clone">2.2 リポジトリを取得する</a></li>
+          <li><a href="#prepare-branch">2.3 変更するときのルール</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-sim">3. シミュレーションを実行する</a>
+        <ol>
+          <li><a href="#sim-check">3.1 動作確認する</a></li>
+          <li><a href="#sim-full">3.2 本計算を実行する</a></li>
+          <li><a href="#sim-figures">3.3 図を作る</a></li>
+          <li><a href="#sim-tables">3.4 表の行を作る</a></li>
+          <li><a href="#sim-outputs">3.5 出力ファイル一覧</a></li>
+          <li><a href="#sim-config">3.6 条件を変える</a></li>
+          <li><a href="#sim-model">3.7 補正式の項を直す</a></li>
+          <li><a href="#sim-files">3.8 各ファイルの役割</a></li>
+          <li><a href="#sim-trouble">3.9 困ったとき</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-overleaf">4. Overleafでコンパイルする</a>
+        <ol>
+          <li><a href="#overleaf-zip">4.1 アップロード用ZIPを作る</a></li>
+          <li><a href="#overleaf-upload">4.2 プロジェクトを作る</a></li>
+          <li><a href="#overleaf-compiler">4.3 コンパイラをLuaLaTeXにする</a></li>
+          <li><a href="#overleaf-compile">4.4 コンパイルとPDFの保存</a></li>
+          <li><a href="#overleaf-limits">4.5 無料プランの注意</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-edit">5. main.texを編集する</a>
+        <ol>
+          <li><a href="#edit-structure">5.1 main.texの構成</a></li>
+          <li><a href="#edit-first">5.2 最初に書き換える箇所</a></li>
+          <li><a href="#edit-basics">5.3 文章を書くときの基本</a></li>
+          <li><a href="#edit-figures">5.4 図を差し替える・追加する</a></li>
+          <li><a href="#edit-tables">5.5 計算結果で表を更新する</a></li>
+          <li><a href="#edit-references">5.6 参考文献を追加する</a></li>
+          <li><a href="#edit-errors">5.7 よくあるエラー</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-github">6. GitHubとの連携</a>
+        <ol>
+          <li><a href="#github-recommended">6.1 おすすめの流れ</a></li>
+          <li><a href="#github-sync">6.2 OverleafのGitHub同期</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-notes">7. 注意事項</a></li>
+      <li><a href="#sec-links">8. 参考リンク</a></li>
+    </ol>
+  </nav>
+</aside>
+<div id="toc-backdrop"></div>
+
+<main>
+  <div class="wrap">
+    <header class="hero">
+      <p class="kicker">利用手順書</p>
+      <h1 id="main-title" tabindex="-1">高次補正レポート 利用手順<br>（シミュレーション・Overleaf編集）</h1>
+      <p>Shot高次補正の回帰手法を検討したシミュレーション（MATLAB）の実行方法と、技術レポート <code>main.tex</code> をOverleafで編集・コンパイルする方法をまとめた手順書です。</p>
+      <p class="meta">リポジトリ: rsakamoto-0824/high-order-correction-report（非公開）／ 作成日: 2026-09-13 ／ 確認環境: MATLAB R2022b（macOS）、TeX Live 2026（LuaLaTeX）</p>
+    </header>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-overview">
+      <h2 id="sec-overview">1. この手順書でできること</h2>
+
+      <h3 id="overview-flow">1.1 全体の流れ</h3>
+      <p>レポートは、シミュレーションの計算結果から図と表を作り、<code>main.tex</code> に反映してからOverleafでPDFにします。</p>
+      <ol class="flow">
+        <li><span class="flow-step">手順1</span><strong>計算する</strong><span class="flow-detail">run_all（3章）</span></li>
+        <li><span class="flow-step">手順2</span><strong>図と表を作る</strong><span class="flow-detail">make_figures / write_tex_tables（3章）</span></li>
+        <li><span class="flow-step">手順3</span><strong>main.texに反映する</strong><span class="flow-detail">表と本文の数値（5章）</span></li>
+        <li><span class="flow-step">手順4</span><strong>PDFにする</strong><span class="flow-detail">Overleafでコンパイル（4章）</span></li>
+      </ol>
+
+      <div class="table-scroll">
+        <table>
+          <caption>やりたいことと読む章</caption>
+          <thead>
+            <tr><th scope="col">やりたいこと</th><th scope="col">読む章</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>文章や著者名を直してPDFにしたい</td><td>4章 → 5.1〜5.3節</td></tr>
+            <tr><td>計算条件を変えて、図と表を作り直したい</td><td>2章 → 3章 → 5.5節</td></tr>
+            <tr><td>ニコン式の項の構成を直したい</td><td>3.7節 → 3章の手順で再計算 → 5.5節</td></tr>
+            <tr><td>文献を追加したい</td><td>5.6節</td></tr>
+            <tr><td>Overleafで直した内容をGitHubに残したい</td><td>6章</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="overview-folders">1.2 フォルダ構成</h3>
+      <div class="code-block">
+        <div class="code-head"><span>フォルダ構成</span></div>
+        <pre><code>high-order-correction-report/
+├── docs/usage-guide.html   … この手順書
+├── report/
+│   ├── main.tex            … レポート本体（Overleafへアップロードする）
+│   └── figures/            … 図（PNG）
+├── sim/                    … MATLABのシミュレーション
+└── results/                … 計算結果（CSV、表の行）</code></pre>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-prepare">
+      <h2 id="sec-prepare">2. 準備</h2>
+
+      <h3 id="prepare-tools">2.1 必要なもの</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">用途</th><th scope="col">必要なもの</th><th scope="col">補足</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>シミュレーション</td><td>MATLAB R2022b 以降</td><td>R2022bで動作を確認しています。</td></tr>
+            <tr><td>シミュレーション</td><td>Statistics and Machine Learning Toolbox</td><td>95パーセンタイルの計算（<code>prctile</code>）で使います。</td></tr>
+            <tr><td>レポートの編集</td><td>Overleafのアカウント</td><td>無料プランでも使えます。コンパイル時間の上限に注意してください（4.5節）。</td></tr>
+            <tr><td>ファイルの取得</td><td>GitHubのアカウントと、このリポジトリへのアクセス権</td><td>リポジトリは非公開です。</td></tr>
+            <tr><td>手元でのコンパイル（任意）</td><td>TeX Live（LuaLaTeX）</td><td>Overleafが使えないときの代わりです。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="prepare-clone">2.2 リポジトリを取得する</h3>
+      <ol class="steps">
+        <li>
+          <p>ターミナルで、リポジトリを置きたいフォルダへ移動し、次のコマンドを実行します。</p>
+          <div class="code-block">
+            <div class="code-head"><span>ターミナル</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>git clone https://github.com/rsakamoto-0824/high-order-correction-report.git</code></pre>
+          </div>
+        </li>
+        <li>
+          <p>コマンドを使わない場合は、GitHubのリポジトリ画面で「Code」→「Download ZIP」を選び、ダウンロードしたZIPを展開します。</p>
+        </li>
+      </ol>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <p>計算結果の本体 <code>results/simulation_results.mat</code>（約10 MB）はGitHubに登録していません。図や表を作り直すときは、先に <code>run_all</code> を実行してください（3.2節）。</p>
+      </div>
+
+      <h3 id="prepare-branch">2.3 変更するときのルール</h3>
+      <p>このリポジトリでは、<strong>mainブランチへ直接コミットしません</strong>。作業用のブランチを作り、プルリクエストで確認してから反映します。</p>
+      <div class="code-block">
+        <div class="code-head"><span>ターミナル</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>git checkout -b feature/作業名
+# … ファイルを変更する …
+git add 変更したファイル
+git commit -m "変更内容の説明"
+git push -u origin feature/作業名
+gh pr create</code></pre>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-sim">
+      <h2 id="sec-sim">3. シミュレーションを実行する</h2>
+      <p>MATLABのコマンドウィンドウで実行します。どの手順も、MATLABの「現在のフォルダー」を <code>sim</code> フォルダにしてから行います。</p>
+      <div class="code-block">
+        <div class="code-head"><span>MATLAB</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>cd リポジトリを置いた場所/high-order-correction-report/sim</code></pre>
+      </div>
+
+      <h3 id="sim-check">3.1 動作確認する（約70秒）</h3>
+      <ol class="steps">
+        <li>
+          <p>Shot数を50に減らして、全体の処理を1回通します。</p>
+          <div class="code-block">
+            <div class="code-head"><span>MATLAB</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>run_all(50)</code></pre>
+          </div>
+        </li>
+        <li>
+          <p>最後に次のような表示が出れば成功です。</p>
+          <div class="code-block">
+            <div class="code-head"><span>表示例</span></div>
+            <pre><code>完了: 69.6 秒。結果は …/results に保存しました。</code></pre>
+          </div>
+        </li>
+      </ol>
+      <div class="callout danger">
+        <span class="callout-label">重要</span>
+        <p>動作確認でも <code>results/</code> の計算結果は上書きされます。そのまま <code>make_figures</code> を実行すると、図も50 Shotの結果で上書きされ、レポートの数値と合わなくなります。動作確認のあとは、必ず3.2節の本計算をやり直してください。</p>
+      </div>
+
+      <h3 id="sim-full">3.2 本計算を実行する（約86分）</h3>
+      <ol class="steps">
+        <li>
+          <p>次のコマンドを実行します。1000 Shotの計算と、正則化の強さλを変えた感度解析を行います。</p>
+          <div class="code-block">
+            <div class="code-head"><span>MATLAB</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>run_all</code></pre>
+          </div>
+        </li>
+        <li>
+          <p>実行中は、条件ごとに進み具合が表示されます。</p>
+          <div class="code-block">
+            <div class="code-head"><span>表示例</span></div>
+            <pre><code>[ 344.0s] outlier Nikon     Huber    dy  median RMS = 0.343 nm</code></pre>
+          </div>
+        </li>
+        <li>
+          <p>「完了: … 秒。結果は … に保存しました。」と表示されたら終わりです。</p>
+        </li>
+      </ol>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <ul>
+          <li>計算中はMATLABを閉じないでください。PCがスリープすると計算が止まるため、スリープしない設定にしておきます。</li>
+          <li>乱数のシードを固定しているため、条件を変えなければ毎回同じ結果になります。</li>
+        </ul>
+      </div>
+      <div class="callout point">
+        <span class="callout-label">ポイント</span>
+        <p>ターミナルからまとめて実行することもできます（<code>sim</code> フォルダで実行）。MATLABの場所は環境に合わせて変えてください。</p>
+        <div class="code-block">
+          <div class="code-head"><span>ターミナル</span><button type="button" class="copy-btn">コピー</button></div>
+          <pre><code>/Applications/MATLAB_R2022b.app/bin/matlab -batch "run_all; make_figures; write_tex_tables"</code></pre>
+        </div>
+      </div>
+
+      <h3 id="sim-figures">3.3 図を作る</h3>
+      <ol class="steps">
+        <li>
+          <p>本計算のあとに実行します。</p>
+          <div class="code-block">
+            <div class="code-head"><span>MATLAB</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>make_figures</code></pre>
+          </div>
+        </li>
+        <li><p>「図を保存しました: …」と表示され、<code>report/figures/</code> に4つのPNGが作られます。</p></li>
+      </ol>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">ファイル</th><th scope="col">レポートでの番号</th><th scope="col">内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>fig_shot_example.png</code></td><td>図1</td><td>生成したShotの例とマーク配置</td></tr>
+            <tr><td><code>fig_vif.png</code></td><td>図2</td><td>各項のVIFと削除した項</td></tr>
+            <tr><td><code>fig_residual_box.png</code></td><td>図3</td><td>補正残差の分布</td></tr>
+            <tr><td><code>fig_lambda_sweep.png</code></td><td>図4</td><td>正則化の強さλを変えたときの残差</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>図はPNG（300 dpi）で出力しています。MATLABのPDF出力は文字のフォントが埋め込まれず、Overleafなどで文字が消えることがあるためです。</p>
+
+      <h3 id="sim-tables">3.4 表の行を作る</h3>
+      <ol class="steps">
+        <li>
+          <p>本計算のあとに実行します。</p>
+          <div class="code-block">
+            <div class="code-head"><span>MATLAB</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>write_tex_tables</code></pre>
+          </div>
+        </li>
+        <li><p>「LaTeXの表の行を保存しました: …」と表示され、<code>results/tex/</code> に <code>rows_*.tex</code> が作られます。使い方は5.5節を参照してください。</p></li>
+      </ol>
+
+      <h3 id="sim-outputs">3.5 出力ファイル一覧</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">ファイル</th><th scope="col">内容</th><th scope="col">GitHubへの登録</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>results/summary.csv</code></td><td>条件ごとの補正残差（中央値、95パーセンタイル、|平均|+3σ、測定点での見かけの残差）</td><td>登録あり</td></tr>
+            <tr><td><code>results/comparisons.csv</code></td><td>条件どうしの比較（低減率、勝率）</td><td>登録あり</td></tr>
+            <tr><td><code>results/reference.csv</code></td><td>補正なしの歪みと、各補正式の表現限界</td><td>登録あり</td></tr>
+            <tr><td><code>results/lambda_sweep.csv</code></td><td>λの感度解析</td><td>登録あり</td></tr>
+            <tr><td><code>results/vif_table.csv</code></td><td>各項のVIFと削除の結果</td><td>登録あり</td></tr>
+            <tr><td><code>results/tex/rows_*.tex</code></td><td>LaTeXの表の行（5.5節）</td><td>登録あり</td></tr>
+            <tr><td><code>results/simulation_results.mat</code></td><td>全計算結果。図と表を作るときに読み込む</td><td>登録なし（<code>run_all</code> で作り直す）</td></tr>
+            <tr><td><code>report/figures/*.png</code></td><td>レポートの図</td><td>登録あり</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="sim-config">3.6 条件を変える（simulation_config.m）</h3>
+      <p>計算条件はすべて <code>sim/simulation_config.m</code> にまとめています。条件を変えるときは、このファイルだけを編集します。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">項目</th><th scope="col">意味</th><th scope="col">現在の値</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>randomSeed</code></td><td>乱数のシード。同じ値なら同じ結果になる</td><td>20260913</td></tr>
+            <tr><td><code>shotHalfWidthMm</code> / <code>shotHalfHeightMm</code></td><td>Shotの半幅・半高さ [mm]</td><td>13.0 / 16.5</td></tr>
+            <tr><td><code>markXmm</code> / <code>markYmm</code></td><td>計測マークの x 座標・y 座標 [mm]</td><td>−12〜12の5列 / −15.5〜15.5の7行</td></tr>
+            <tr><td><code>evalGridCount</code></td><td>補正残差を評価するグリッドの1辺の点数</td><td>21</td></tr>
+            <tr><td><code>shotCount</code></td><td>生成するShot数</td><td>1000</td></tr>
+            <tr><td><code>truthSigmaNmByOrder</code></td><td>真の歪み係数の標準偏差 [nm]（次数0〜6の順）</td><td>[2.0 2.0 0.8 0.6 0.4 0.4 0.4]</td></tr>
+            <tr><td><code>truthActiveProbByOrder</code></td><td>その次数の項が現れる確率（次数0〜6の順）</td><td>[1.0 1.0 0.5 0.5 0.3 0.3 0.3]</td></tr>
+            <tr><td><code>noiseSigmaNm</code></td><td>測定の偶然誤差（1σ）[nm]</td><td>0.3</td></tr>
+            <tr><td><code>outlierProbability</code></td><td>マークが異常値になる確率</td><td>0.05</td></tr>
+            <tr><td><code>outlierMinNm</code> / <code>outlierMaxNm</code></td><td>異常値の大きさの範囲 [nm]</td><td>3.0 / 8.0</td></tr>
+            <tr><td><code>vifThreshold</code></td><td>VIFのしきい値</td><td>10</td></tr>
+            <tr><td><code>huberTuning</code></td><td>Huber回帰の定数 c</td><td>1.345</td></tr>
+            <tr><td><code>lambdaL1</code></td><td>L1正則化の強さ（固定値）。偶然誤差とマーク数から自動で計算する</td><td>0.3 / √35 ≈ 0.051</td></tr>
+            <tr><td><code>lambdaL2</code></td><td>L2正則化の強さ（固定値）</td><td>0.1</td></tr>
+            <tr><td><code>lambdaScaleList</code></td><td>λの感度解析で使う倍率</td><td>[0.25 0.5 1 2 4 8]</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ol class="steps">
+        <li><p><code>simulation_config.m</code> の値を書き換えて保存します。</p></li>
+        <li><p><code>run_all</code> → <code>make_figures</code> → <code>write_tex_tables</code> の順に実行します。</p></li>
+        <li><p>5.5節の手順で、<code>main.tex</code> の表と本文の数値を更新します。</p></li>
+      </ol>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <ul>
+          <li>ニコン式には $y^6$ の項があるため、<code>markYmm</code> は<strong>7行以上</strong>にしてください。6行以下では係数を求められません。</li>
+          <li>マーク配置を変えるとVIFも変わり、削除される項も変わります。</li>
+          <li>レポート本文にも条件の値を書いています（4章「実験」）。値を変えたら本文も直してください。</li>
+        </ul>
+      </div>
+
+      <h3 id="sim-model">3.7 補正式の項を直す（model_terms.m）</h3>
+      <p>補正式は <code>sim/model_terms.m</code> で定義しています。各式は、項 x<sup>m</sup>y<sup>n</sup> の指数 <code>[m n]</code> を1行ずつ並べたものです。<code>model.x</code> が d<sub>x</sub> の式、<code>model.y</code> が d<sub>y</sub> の式です。</p>
+      <div class="code-block">
+        <div class="code-head"><span>MATLAB（model_terms.m の一部）</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>case 'Nikon'
+    model.x.exp  = [0 0; 1 0; 0 1; 0 2; 0 3; 0 4; 0 5; 0 6; 2 0; 3 0; 1 1; 1 2];
+    model.y.exp  = [0 0; 0 1; 1 0; 1 1; 0 2; 1 2; 0 3; 1 3; 0 4; 1 4; 0 5; 1 5; 0 6; 2 0; 2 1];</code></pre>
+      </div>
+      <p>例えば <code>[2 1]</code> は x<sup>2</sup>y、<code>[0 6]</code> は y<sup>6</sup> を表します。</p>
+      <div class="callout danger">
+        <span class="callout-label">重要</span>
+        <p>ニコン式の項の構成は<strong>仮定</strong>です。装置の係数名 SHOTFAC<var>mn</var> を x<sup>m</sup>y<sup>n</sup> の係数と解釈して作りました。装置仕様と違っていた場合は、<code>'Nikon'</code> の指数を直し、3章の手順で計算し直してください。</p>
+      </div>
+      <ul>
+        <li>真の歪み（<code>'Truth'</code>）は、ASML式とニコン式の項を合わせて自動で作るため、直す必要はありません。</li>
+        <li>切片と1次の項（並進・倍率・回転）は、VIFで削除されず、正則化もかかりません。</li>
+      </ul>
+
+      <h3 id="sim-files">3.8 各ファイルの役割</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">ファイル</th><th scope="col">役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>run_all.m</code></td><td>実行の入口。補正式の作成、Shotの生成、回帰、評価、CSVの保存までを行う</td></tr>
+            <tr><td><code>simulation_config.m</code></td><td>計算条件をまとめたファイル（3.6節）</td></tr>
+            <tr><td><code>model_terms.m</code></td><td>ASML式・ニコン式・真の歪みの項の定義（3.7節）</td></tr>
+            <tr><td><code>generate_shots.m</code></td><td>高次歪みを持つShotと、測定誤差（偶然誤差・異常値）を作る</td></tr>
+            <tr><td><code>design_matrix.m</code></td><td>マーク座標から回帰に使う行列を作る</td></tr>
+            <tr><td><code>compute_vif.m</code></td><td>各項のVIFを計算する</td></tr>
+            <tr><td><code>reduce_terms_by_vif.m</code></td><td>VIFがしきい値未満になるまで、次数の高い項から削除する</td></tr>
+            <tr><td><code>fit_batch.m</code></td><td>回帰計算（OLS / Huber / L2 / L1 / Huber+L2 / Huber+L1）</td></tr>
+            <tr><td><code>make_figures.m</code></td><td>レポート用の図を作る（3.3節）</td></tr>
+            <tr><td><code>write_tex_tables.m</code></td><td>LaTeXの表の行を作る（3.4節）</td></tr>
+            <tr><td><code>monomial_label.m</code></td><td>項の表示名（例: x^{2}y）を作る</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="sim-trouble">3.9 困ったとき</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">表示・症状</th><th scope="col">原因</th><th scope="col">対処</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>「結果ファイルがありません。先に run_all を実行してください」</td><td><code>results/simulation_results.mat</code> がない（GitHubには登録していない）</td><td><code>run_all</code> を実行してから、<code>make_figures</code> や <code>write_tex_tables</code> を実行する</td></tr>
+            <tr><td>「関数または変数 'prctile' が認識されません。」</td><td>Statistics and Machine Learning Toolbox が入っていない</td><td>ツールボックスを追加する</td></tr>
+            <tr><td>「座標降下法が 20000 回で収束しませんでした（最大変化 …）。」</td><td>L1正則化の計算が決められた回数で終わらなかった</td><td><code>simulation_config.m</code> の <code>cdMaxSweep</code> を増やすか、λの値を見直す</td></tr>
+            <tr><td>「Shot数は1以上の整数で指定してください。」</td><td><code>run_all</code> の引数が正しくない</td><td><code>run_all(50)</code> のように1以上の整数を指定する</td></tr>
+            <tr><td>「未対応のモデル名です: …」</td><td><code>model_terms</code> にない名前を指定した</td><td><code>'ASML'</code>、<code>'Nikon'</code>、<code>'Truth'</code> のどれかを使う</td></tr>
+            <tr><td>計算が遅い</td><td>L1正則化とλの感度解析に時間がかかる</td><td>まず <code>run_all(50)</code> で確認する。<code>lambdaScaleList</code> の倍率を減らすと短くなる</td></tr>
+            <tr><td>図の文字が小さい・はみ出す</td><td>図の大きさと文字サイズの組み合わせ</td><td><code>make_figures.m</code> の <code>new_figure</code> に渡している幅・高さ [cm] や <code>style.fontSize</code> を調整する</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-overleaf">
+      <h2 id="sec-overleaf">4. Overleafでコンパイルする</h2>
+      <p>画面の名称は、Overleafを英語表示にしたときのものです。日本語表示では表記が異なる場合があります（2026-09-13 に公式ドキュメントで確認）。</p>
+
+      <h3 id="overleaf-zip">4.1 アップロード用ZIPを作る</h3>
+      <p>ZIPに入れるのは <code>report</code> フォルダの中の <strong><code>main.tex</code> と <code>figures</code> フォルダの2つ</strong>です。</p>
+      <ol class="steps">
+        <li><p>Finderで <code>report</code> フォルダを開きます。</p></li>
+        <li><p><code>main.tex</code> と <code>figures</code> の2つを選び、右クリックして「2項目を圧縮」を選びます。</p></li>
+        <li><p>同じ場所にZIPファイルができます。</p></li>
+      </ol>
+      <p>ターミナルで作る場合は、リポジトリのフォルダで次を実行します。</p>
+      <div class="code-block">
+        <div class="code-head"><span>ターミナル</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>cd report &amp;&amp; zip -r ../overleaf_upload.zip main.tex figures</code></pre>
+      </div>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <ul>
+          <li><code>report</code> フォルダごと圧縮すると、<code>main.tex</code> が <code>report/</code> の中に入ります。うまくコンパイルされない場合は、中身の2つだけを圧縮し直してください。</li>
+          <li>Overleafは外部のサービスです。実測データなど社内の情報を書き加える場合は、アップロードしてよいか社内のルールで確認してください。</li>
+        </ul>
+      </div>
+
+      <h3 id="overleaf-upload">4.2 プロジェクトを作る</h3>
+      <ol class="steps">
+        <li><p>Overleafにログインし、プロジェクト一覧の上にある「<strong>New project</strong>」を押します。</p></li>
+        <li><p>一覧から「<strong>Existing project (.zip)</strong>」を選びます。</p></li>
+        <li><p>「Upload Zipped Project」の画面に、4.1節で作ったZIPをドラッグします（ファイルを選んでも構いません）。</p></li>
+        <li><p>アップロードが終わると、プロジェクトが自動で開きます。</p></li>
+      </ol>
+
+      <h3 id="overleaf-compiler">4.3 コンパイラをLuaLaTeXにする（必須）</h3>
+      <div class="callout danger">
+        <span class="callout-label">重要</span>
+        <p>Overleafの初期設定は pdfLaTeX です。このレポートは日本語の文書クラス（ltjsarticle）を使うため、<strong>LuaLaTeXに変えないとコンパイルできません</strong>。</p>
+      </div>
+      <ol class="steps">
+        <li><p>エディターの左下にある歯車のアイコン（または「File」メニュー）から「<strong>Settings</strong>」を開きます。</p></li>
+        <li><p>設定画面の左側で「<strong>Compiler</strong>」を選びます。</p></li>
+        <li><p>「Compiler」の一覧から「<strong>LuaLaTeX</strong>」を選びます。</p></li>
+        <li><p>「TeX Live version」は最新版のままにします（公式ドキュメントでも最新版が推奨されています）。</p></li>
+        <li><p>設定画面にメインドキュメント（Main document）の項目がある場合は、<code>main.tex</code> を選びます。</p></li>
+      </ol>
+
+      <h3 id="overleaf-compile">4.4 コンパイルとPDFの保存</h3>
+      <ol class="steps">
+        <li><p>「<strong>Recompile</strong>」を押します。右側にPDFが表示されます（20ページ前後）。</p></li>
+        <li><p>PDFを保存するときは、左上の「<strong>File</strong>」メニューの Download から「<strong>PDF</strong>」を選びます。</p></li>
+        <li><p>編集したソース（main.tex と図）を保存するときは、「File」メニューからソースをZIPでダウンロードします。ZIPにPDFは含まれません。</p></li>
+      </ol>
+      <div class="callout success">
+        <span class="callout-label">確認</span>
+        <p>表紙・目次・本文・参考文献（28件）まで表示され、図1〜図4が出ていれば正しくコンパイルできています。</p>
+      </div>
+
+      <h3 id="overleaf-limits">4.5 無料プランの注意</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">項目</th><th scope="col">無料プランの上限</th><th scope="col">このレポート</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>コンパイル時間</td><td><strong>10秒</strong>（有料プランは240秒）</td><td>日本語のLuaLaTeXは時間がかかりやすく、上限に近づく場合がある</td></tr>
+            <tr><td>編集できるデータ量</td><td>7 MB</td><td>main.tex は約55 KB</td></tr>
+            <tr><td>テキストファイル1つの大きさ</td><td>2 MB</td><td>問題なし</td></tr>
+            <tr><td>アップロードするファイル1つの大きさ</td><td>50 MB</td><td>図は1枚100 KB未満</td></tr>
+            <tr><td>1回にアップロードできるファイル数</td><td>180</td><td>5ファイル</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>時間切れでコンパイルが止まった場合は、次の順に試してください。</p>
+      <ol>
+        <li>もう一度「Recompile」を押す。</li>
+        <li>手元のPCでコンパイルする（TeX Liveが必要）。<code>report</code> フォルダで次を実行します。</li>
+      </ol>
+      <div class="code-block">
+        <div class="code-head"><span>ターミナル</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>latexmk -lualatex main.tex</code></pre>
+      </div>
+      <ol start="3">
+        <li>頻繁に時間切れになる場合は、有料プランを検討する。</li>
+      </ol>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-edit">
+      <h2 id="sec-edit">5. main.texを編集する</h2>
+
+      <h3 id="edit-structure">5.1 main.texの構成</h3>
+      <p>Overleafのエディターで検索（Macは ⌘+F、Windowsは Ctrl+F）を使い、次の目印で場所を探します。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">部分</th><th scope="col">目印（検索する語）</th><th scope="col">内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>設定</td><td><code>\documentclass</code></td><td>文書クラスと使うパッケージ</td></tr>
+            <tr><td>表紙</td><td><code>\begin{titlepage}</code></td><td>タイトル、副題、著者名、日付</td></tr>
+            <tr><td>目次</td><td><code>\tableofcontents</code></td><td>章の見出しから自動で作られる</td></tr>
+            <tr><td>本文</td><td><code>\section{序論}</code> 〜 <code>\section{結論}</code></td><td>序論、高次補正、提案手法、実験、結果、考察、結論</td></tr>
+            <tr><td>謝辞</td><td><code>\section*{謝辞}</code></td><td>謝辞の文章</td></tr>
+            <tr><td>参考文献</td><td><code>\begin{thebibliography}</code></td><td>文献リスト（5.6節）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="edit-first">5.2 最初に書き換える箇所</h3>
+      <p>「← 記入する」「← 必要に応じて書き換える」というコメントが付いた行です。</p>
+      <div class="code-block">
+        <div class="code-head"><span>LaTeX（表紙）</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>{\LARGE\bfseries リソグラフィー工程における\\[3mm]高次補正の回帰手法に関する検討\par}
+\vspace{8mm}
+{\large ―VIFによる補正項選定・ロバスト回帰・正則化―\par}
+\vspace{45mm}
+{\Large 著者名\par}  % ← 著者名を記入する
+\vspace{8mm}
+{\large \today\par}</code></pre>
+      </div>
+      <ul>
+        <li><strong>著者名:</strong> <code>著者名</code> を実際の名前に書き換えます。</li>
+        <li><strong>日付:</strong> <code>\today</code> はコンパイルした日の日付になります。日付を固定する場合は <code>{\large 2026年9月13日\par}</code> のように書きます。</li>
+        <li><strong>タイトル:</strong> <code>\\[3mm]</code> は改行（3 mm空ける）の意味です。</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-head"><span>LaTeX（謝辞）</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>本報告の作成にあたり，有益な議論と助言をいただいた関係者の皆様に感謝いたします．  % ← 必要に応じて書き換える</code></pre>
+      </div>
+
+      <h3 id="edit-basics">5.3 文章を書くときの基本</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">書きたいもの</th><th scope="col">書き方</th><th scope="col">例・補足</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>段落を分ける</td><td>空行を1行入れる</td><td>ただの改行は段落になりません</td></tr>
+            <tr><td>章・節・項の見出し</td><td><code>\section{…}</code> / <code>\subsection{…}</code> / <code>\subsubsection{…}</code></td><td>番号と目次は自動で付きます</td></tr>
+            <tr><td>太字</td><td><code>\textbf{…}</code></td><td><code>\textbf{重要}</code></td></tr>
+            <tr><td>箇条書き</td><td><code>\begin{itemize}</code> と <code>\item</code></td><td>番号付きは <code>enumerate</code></td></tr>
+            <tr><td>文中の数式</td><td><code>$…$</code></td><td><code>$d_x$</code>、<code>$k_{13}$</code></td></tr>
+            <tr><td>番号付きの数式</td><td><code>\begin{equation} … \label{eq:名前} \end{equation}</code></td><td>本文では <code>式\eqref{eq:名前}</code> で参照</td></tr>
+            <tr><td>数字と単位</td><td>間に <code>\,</code> を入れる</td><td><code>0.3\,nm</code></td></tr>
+            <tr><td>パーセント</td><td><code>\%</code></td><td><code>70\,\%</code></td></tr>
+            <tr><td>PDFに出さないメモ</td><td><code>%</code> から行末まで</td><td><code>% あとで確認</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <ul>
+          <li>次の記号はそのまま書くとエラーになります。前に <code>\</code> を付けてください: <code>% $ &amp; # _ { }</code> → <code>\% \$ \&amp; \# \_ \{ \}</code></li>
+          <li>本文の句読点は「，」「．」（全角のカンマとピリオド）でそろえています。</li>
+        </ul>
+      </div>
+
+      <h3 id="edit-figures">5.4 図を差し替える・追加する</h3>
+      <p><strong>差し替える場合:</strong> 同じファイル名のPNGを、Overleafのファイル一覧のアップロード機能で <code>figures</code> フォルダへ上書きアップロードし、Recompileします。</p>
+      <p><strong>追加する場合:</strong> PNGを <code>figures</code> フォルダへアップロードし、本文の入れたい位置に次を書きます。</p>
+      <div class="code-block">
+        <div class="code-head"><span>LaTeX</span><button type="button" class="copy-btn">コピー</button></div>
+        <pre><code>\begin{figure}[tb]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_new}
+  \caption{図の説明．}
+  \label{fig:new}
+\end{figure}</code></pre>
+      </div>
+      <ul>
+        <li>本文からは <code>図\ref{fig:new}</code> と書くと、図の番号が自動で入ります。</li>
+        <li><code>\includegraphics</code> のファイル名には拡張子（.png）を書かなくて構いません。</li>
+        <li><code>[tb]</code> は「ページの上か下に置く」という指定です。図の位置はLaTeXが自動で決めます。</li>
+      </ul>
+
+      <h3 id="edit-tables">5.5 計算結果で表を更新する</h3>
+      <p>条件を変えて計算し直したときは、表の数値を <code>results/tex/</code> の出力で置き換えます。数値を手で打ち直さないので、転記ミスを防げます。</p>
+      <ol class="steps">
+        <li><p>3章の手順で <code>run_all</code> と <code>write_tex_tables</code> を実行します。</p></li>
+        <li><p><code>results/tex/</code> の <code>rows_*.tex</code> を開き、中身をすべてコピーします。</p></li>
+        <li><p><code>main.tex</code> で下の表の目印（<code>\label</code>）を探し、見出しの下の <code>\midrule</code> から <code>\bottomrule</code> の直前までを、コピーした内容で置き換えます。</p></li>
+        <li><p>本文中の数値を、<code>results/*.csv</code> を見ながら手で直します。</p></li>
+        <li><p>Recompileして、表が崩れていないか確認します。</p></li>
+      </ol>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">出力ファイル</th><th scope="col">main.tex の表</th><th scope="col">目印</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>rows_vif.tex</code></td><td>表2 VIFによるkパラメータ削除の結果</td><td><code>\label{tab:vif}</code></td></tr>
+            <tr><td><code>rows_summary_outlier.tex</code></td><td>表3 異常値ありの補正残差</td><td><code>\label{tab:summary}</code></td></tr>
+            <tr><td><code>rows_reference.tex</code></td><td>表4 補正なし・表現限界</td><td><code>\label{tab:reference}</code></td></tr>
+            <tr><td><code>rows_comparisons_outlier.tex</code></td><td>表5 条件間の比較</td><td><code>\label{tab:comparison}</code></td></tr>
+            <tr><td><code>rows_summary_clean.tex</code></td><td>表6 異常値なしの補正残差</td><td><code>\label{tab:clean}</code></td></tr>
+            <tr><td><code>rows_comparisons_clean.tex</code></td><td>表はなし（本文の数値の確認用）</td><td>―</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout danger">
+        <span class="callout-label">重要</span>
+        <p>本文中の数値（5章「結果」、6章「考察」、7章「結論」、表1の生成条件、4章の実験条件）は<strong>自動では変わりません</strong>。計算し直したときは必ず見直してください。結論の内容そのものが変わることもあります。</p>
+      </div>
+
+      <h3 id="edit-references">5.6 参考文献を追加する</h3>
+      <ol class="steps">
+        <li>
+          <p>本文で引用する位置に <code>\cite{キー}</code> を書きます。複数なら <code>\cite{キー1,キー2}</code> です。</p>
+        </li>
+        <li>
+          <p><code>\begin{thebibliography}{99}</code> の中に、文献を1件追加します。</p>
+          <div class="code-block">
+            <div class="code-head"><span>LaTeX</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>\bibitem{Author2026}
+A. Author and B. Author,
+``Title of the paper,''
+Proc. SPIE \textbf{12345}, 123450A (2026). doi:10.1117/12.0000000</code></pre>
+          </div>
+        </li>
+        <li><p>Recompileして、本文に番号が入ったことを確認します。</p></li>
+      </ol>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <ul>
+          <li>番号は、文献リストに並べた順に付きます。このレポートは<strong>本文で最初に引用した順</strong>に並べているので、新しい文献は最初に引用した位置に合わせて挿入してください。</li>
+          <li>本文で引用していない文献はリストに残さないでください。</li>
+          <li><code>\cite</code> と <code>\bibitem</code> のキーは、つづりを完全に一致させます。</li>
+        </ul>
+      </div>
+
+      <h3 id="edit-errors">5.7 よくあるエラー</h3>
+      <p>エラーが出ると、Recompileボタンの近くにエラーの件数が表示され、ログで内容と行番号を確認できます。</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">表示・症状</th><th scope="col">主な原因</th><th scope="col">対処</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>日本語の文書クラスでエラーになる、日本語が出ない</td><td>コンパイラが pdfLaTeX のまま</td><td>4.3節の手順で LuaLaTeX に変える</td></tr>
+            <tr><td><code>Undefined control sequence</code></td><td><code>\</code> で始まる命令のつづり間違い</td><td>エラーの行の命令を確認する</td></tr>
+            <tr><td><code>Missing $ inserted</code></td><td><code>_</code> や <code>^</code> を数式の外で使った</td><td><code>$…$</code> で囲むか、<code>\_</code> と書く</td></tr>
+            <tr><td><code>File `figures/…' not found</code></td><td>図のファイル名やフォルダが違う</td><td><code>figures</code> フォルダ内のファイル名と、<code>\includegraphics</code> の名前を一致させる</td></tr>
+            <tr><td><code>Citation `…' undefined</code>、本文に [?] と出る</td><td><code>\cite</code> と <code>\bibitem</code> のキーが違う</td><td>キーのつづりを合わせてRecompileする</td></tr>
+            <tr><td>図や表の番号が ?? になる</td><td><code>\label</code> と <code>\ref</code> の名前が違う</td><td>名前を合わせてRecompileする</td></tr>
+            <tr><td>時間切れでコンパイルが止まる</td><td>無料プランのコンパイル時間（10秒）を超えた</td><td>4.5節の対処を試す</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-github">
+      <h2 id="sec-github">6. GitHubとの連携</h2>
+
+      <h3 id="github-recommended">6.1 おすすめの流れ（無料で使える方法）</h3>
+      <p>GitHubの <code>report/main.tex</code> を正本とし、Overleafは編集とコンパイルに使います。</p>
+      <ol class="steps">
+        <li>
+          <p>作業用のブランチを作ります。</p>
+          <div class="code-block">
+            <div class="code-head"><span>ターミナル</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>git checkout main
+git pull
+git checkout -b docs/report-edit</code></pre>
+          </div>
+        </li>
+        <li><p>4章の手順でOverleafにアップロードし、編集してコンパイルします。</p></li>
+        <li><p>Overleafの「File」メニューから、ソースをZIPでダウンロードします。</p></li>
+        <li><p>ZIPを展開し、<code>main.tex</code>（と追加・差し替えした図）を、リポジトリの <code>report/</code> に上書きコピーします。</p></li>
+        <li>
+          <p>変更点を確認してからコミットし、プルリクエストを作ります。</p>
+          <div class="code-block">
+            <div class="code-head"><span>ターミナル</span><button type="button" class="copy-btn">コピー</button></div>
+            <pre><code>git diff
+git add report/main.tex report/figures
+git commit -m "レポート本文を更新"
+git push -u origin docs/report-edit
+gh pr create</code></pre>
+          </div>
+        </li>
+      </ol>
+      <div class="callout point">
+        <span class="callout-label">ポイント</span>
+        <p><code>git diff</code> で、意図しない変更（Overleafで誤って消した行など）が入っていないかを必ず確認してください。</p>
+      </div>
+
+      <h3 id="github-sync">6.2 OverleafのGitHub同期（有料機能）</h3>
+      <p>OverleafにはGitHubと同期する機能がありますが、有料プランの機能です。使い方の概要は次のとおりです。</p>
+      <ol>
+        <li>Overleafのアカウント設定で、GitHubのアカウントと連携する。</li>
+        <li>プロジェクト一覧の「New project」→「GitHub repo」でリポジトリを選び、「Import to Overleaf」を押す。</li>
+        <li>編集したら、左側の「Integrations」→「GitHub」→「Push Overleaf changes to GitHub」で反映する（自動では同期されない）。</li>
+      </ol>
+      <div class="callout danger">
+        <span class="callout-label">重要</span>
+        <p>OverleafのGit連携は<strong>ブランチに対応しておらず</strong>、変更は既定のブランチ（main）に直接反映されます。このリポジトリは「ブランチ → プルリクエスト → 確認 → マージ」で運用しているため、<strong>同期機能は使わず、6.1節の方法をおすすめします</strong>。</p>
+      </div>
+      <p>そのほか、公式ドキュメントでは次の点が注意されています。</p>
+      <ul>
+        <li>GitHubから取り込むと、Overleafの変更履歴の追跡（track changes）やコメントが失われることがある。</li>
+        <li>一度つないだプロジェクトは、別のリポジトリにつなぎ直せない。</li>
+        <li>リポジトリ全体を取り込むため、<code>main.tex</code> は <code>report/</code> の中になり、シミュレーションのファイルもOverleafに入る。</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-notes">
+      <h2 id="sec-notes">7. 注意事項</h2>
+      <ul>
+        <li><strong>ニコン式の項の構成は仮定です。</strong> 装置の係数名の添字を次数と解釈しています（3.7節）。装置仕様で確認してください。</li>
+        <li><strong>結論は、固定した正則化の強さλに依存する部分があります。</strong> 詳しくはレポートの6.3節を参照してください。</li>
+        <li>計測データはすべて乱数で作ったもので、実測データは含みません。</li>
+        <li>社内の機密情報は、外部サービス（Overleafなど）にアップロードしないでください。必要な場合は社内のルールで確認します。</li>
+        <li>GitHubに登録していないファイル: <code>results/simulation_results.mat</code>、Overleaf用のZIP、レポートのPDF。いずれも作り直せます。</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-links">
+      <h2 id="sec-links">8. 参考リンク</h2>
+      <p>Overleafの公式ドキュメント（2026-09-13 確認）</p>
+      <ul>
+        <li><a href="https://docs.overleaf.com/managing-projects-and-files/uploading-a-project">Uploading a project</a>（ZIPのアップロード）</li>
+        <li><a href="https://docs.overleaf.com/getting-started/recompiling-your-project/selecting-a-tex-live-version-and-latex-compiler">Selecting a TeX Live version and LaTeX compiler</a>（コンパイラの変更）</li>
+        <li><a href="https://docs.overleaf.com/getting-started/free-and-premium-plans/plan-limits">Plan limits</a>（無料プランの上限）</li>
+        <li><a href="https://docs.overleaf.com/managing-projects-and-files/downloading-a-project">Downloading a project</a>（PDF・ソースのダウンロード）</li>
+        <li><a href="https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization">GitHub synchronization</a>（GitHub同期）</li>
+        <li><a href="https://www.overleaf.com/learn/latex/Japanese">Japanese</a>（日本語の組版）</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<button type="button" id="to-top" aria-label="ページの先頭へ戻る">
+  <span aria-hidden="true">↑</span><span>トップへ</span>
+</button>
+<p class="visually-hidden" id="copy-status" aria-live="polite"></p>
+
+<script>
+  (function () {
+    "use strict";
+
+    var TO_TOP_SHOW_OFFSET_PX = 400;
+    var ACTIVE_HEADING_OFFSET_PX = 120;
+    var COPY_MESSAGE_DURATION_MS = 2000;
+    var NARROW_SCREEN_QUERY = "(max-width: 960px)";
+
+    var body = document.body;
+    var toc = document.getElementById("toc");
+    var tocToggle = document.getElementById("toc-toggle");
+    var tocClose = document.getElementById("toc-close");
+    var tocBackdrop = document.getElementById("toc-backdrop");
+    var toTop = document.getElementById("to-top");
+    var copyStatus = document.getElementById("copy-status");
+    var mainTitle = document.getElementById("main-title");
+    var narrowScreen = window.matchMedia(NARROW_SCREEN_QUERY);
+
+    /* ---- 目次の開閉（狭い画面） ---- */
+    function openToc() {
+      body.classList.add("toc-open");
+      tocToggle.setAttribute("aria-expanded", "true");
+      tocClose.focus();
+    }
+
+    function closeToc(returnFocus) {
+      if (!body.classList.contains("toc-open")) { return; }
+      body.classList.remove("toc-open");
+      tocToggle.setAttribute("aria-expanded", "false");
+      if (returnFocus) { tocToggle.focus(); }
+    }
+
+    tocToggle.addEventListener("click", function () {
+      if (body.classList.contains("toc-open")) { closeToc(true); } else { openToc(); }
+    });
+    tocClose.addEventListener("click", function () { closeToc(true); });
+    tocBackdrop.addEventListener("click", function () { closeToc(true); });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { closeToc(true); }
+    });
+    toc.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        if (narrowScreen.matches) { closeToc(false); }
+      });
+    });
+
+    /* ---- ページ内リンク ----
+       表示方法（プレビュー画面など）によっては #リンクで移動しないことがあるため、スクリプトで確実に移動させる。
+       移動先の見出しへフォーカスも移し、キーボード操作でも続きから読めるようにする。 */
+    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function scrollToSection(target) {
+      target.scrollIntoView({ behavior: reducedMotion.matches ? "auto" : "smooth", block: "start" });
+      if (!target.hasAttribute("tabindex")) { target.setAttribute("tabindex", "-1"); }
+      target.focus({ preventScroll: true });
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        var target = document.getElementById(link.getAttribute("href").slice(1));
+        if (!target) { return; }
+        event.preventDefault();
+        scrollToSection(target);
+        try {
+          history.replaceState(null, "", "#" + target.id);
+        } catch (error) {
+          /* 履歴を更新できない表示方法でも、移動そのものは完了している */
+        }
+      });
+    });
+
+    /* ---- 現在読んでいる章を目次で強調する ---- */
+    var tocLinks = Array.prototype.slice.call(toc.querySelectorAll('a[href^="#"]'));
+    var headings = tocLinks
+      .map(function (link) { return document.getElementById(link.getAttribute("href").slice(1)); })
+      .filter(function (element) { return element !== null; });
+
+    function updateActiveLink() {
+      var activeId = headings.length > 0 ? headings[0].id : "";
+      headings.forEach(function (heading) {
+        if (heading.getBoundingClientRect().top <= ACTIVE_HEADING_OFFSET_PX) { activeId = heading.id; }
+      });
+      tocLinks.forEach(function (link) {
+        if (link.getAttribute("href") === "#" + activeId) {
+          link.setAttribute("aria-current", "true");
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    }
+
+    /* ---- トップへ戻るボタン ---- */
+    function updateToTop() {
+      toTop.classList.toggle("is-visible", window.scrollY > TO_TOP_SHOW_OFFSET_PX);
+    }
+
+    toTop.addEventListener("click", function () {
+      window.scrollTo({ top: 0 });
+      mainTitle.focus({ preventScroll: true });
+    });
+
+    var ticking = false;
+    window.addEventListener("scroll", function () {
+      if (ticking) { return; }
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        updateActiveLink();
+        updateToTop();
+        ticking = false;
+      });
+    }, { passive: true });
+    updateActiveLink();
+    updateToTop();
+
+    /* ---- コードのコピー ---- */
+    function fallbackCopy(text) {
+      var textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      var succeeded = false;
+      try { succeeded = document.execCommand("copy"); } catch (error) { succeeded = false; }
+      document.body.removeChild(textarea);
+      return succeeded;
+    }
+
+    function showCopyResult(button, message) {
+      button.textContent = message;
+      copyStatus.textContent = message;
+      window.setTimeout(function () { button.textContent = "コピー"; }, COPY_MESSAGE_DURATION_MS);
+    }
+
+    document.querySelectorAll(".copy-btn").forEach(function (button) {
+      button.setAttribute("aria-label", "このコードをコピー");
+      button.addEventListener("click", function () {
+        var code = button.closest(".code-block").querySelector("pre code");
+        var text = code.textContent;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function () {
+            showCopyResult(button, "コピーしました");
+          }, function () {
+            showCopyResult(button, fallbackCopy(text) ? "コピーしました" : "コピーできません");
+          });
+        } else {
+          showCopyResult(button, fallbackCopy(text) ? "コピーしました" : "コピーできません");
+        }
+      });
+    });
+  })();
+</script>
+</body>
+</html>

@@ -9,10 +9,18 @@
 
 を、ASML式（k1〜k20）とニコン式（Shot線形＋高次係数）に適用し、乱数で作った1000通りのShotで比較する。
 
+## 利用手順書
+
+シミュレーションの実行手順と、Overleafでの `main.tex` の編集手順は
+[docs/usage-guide.html](docs/usage-guide.html) にまとめている。
+GitHub上ではHTMLのソースが表示されるため、リポジトリを取得（clone）してからブラウザで開く。
+
 ## フォルダ構成
 
 ```
 high-order-correction-report/
+├── docs/
+│   └── usage-guide.html  # 利用手順書（シミュレーション・Overleaf編集）
 ├── report/
 │   ├── main.tex          # レポート本体（Overleafにアップロードする）
 │   └── figures/          # 図（make_figures.m で生成、PNG 300 dpi）

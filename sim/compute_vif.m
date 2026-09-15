@@ -4,6 +4,9 @@ function vif = compute_vif(A, exponents)
 %   切片（指数 [0 0]）はVIFの対象外なので NaN を返す。
 %   VIFはマーク配置と項の組だけで決まり、測定値には依存しない。
 isIntercept = all(exponents == 0, 2);
+% mm座標のべき乗は列ごとに桁が大きく違うため、各列を最大値で割って数値計算を安定させる。
+% VIFは列を定数倍しても変わらない。
+A = A ./ max(abs(A), [], 1);
 termCount = size(A, 2);
 vif = nan(termCount, 1);
 for j = find(~isIntercept)'

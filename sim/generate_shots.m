@@ -1,7 +1,8 @@
 function data = generate_shots(cfg, truthModel, markX, markY, evalX, evalY)
 %GENERATE_SHOTS 高次歪みを持つShotを乱数で生成し、測定値を作る。
-%   座標は正規化済み（Shot端で±1）。各軸（x, y）について次を返す（点数×Shot数）。
-%     trueAtMarks     : マーク位置での真の歪み [nm]
+%   座標はShot中心を原点とする [mm]。各軸（x, y）について次を返す。
+%     coefficient     : 真の歪みの係数（項数×Shot数、単位 nm/mm^次数）
+%     trueAtMarks     : マーク位置での真の歪み [nm]（点数×Shot数、以下同じ）
 %     trueAtEval      : 評価グリッドでの真の歪み [nm]
 %     measuredClean   : 真値 ＋ 偶然誤差
 %     measuredOutlier : 真値 ＋ 偶然誤差 ＋ 異常値
@@ -22,8 +23,10 @@ for a = 1:numel(axisNames)
     activeProbability = cfg.truthActiveProbByOrder(order + 1);
     termCount = size(exponents, 1);
 
+    % 係数の大きさは「Shot端での変位量 [nm]」で決め、mm座標の係数に換算する
+    edgeScale = cfg.shotHalfWidthMm .^ exponents(:, 1) .* cfg.shotHalfHeightMm .^ exponents(:, 2);
     isActive = rand(termCount, shotCount) < activeProbability(:);
-    coefficient = randn(termCount, shotCount) .* sigma(:) .* isActive;
+    coefficient = randn(termCount, shotCount) .* sigma(:) .* isActive ./ edgeScale;
 
     trueAtMarks = design_matrix(markX, markY, exponents) * coefficient;
     trueAtEval  = design_matrix(evalX, evalY, exponents) * coefficient;

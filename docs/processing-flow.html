@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高次補正シミュレーション 処理フロー</title>
+<style>
+  :root {
+    /* 色: 利用手順書（usage-guide.html）と同じ配色。アクセント1色＋意味のある色だけに絞る */
+    --color-bg: #f5f7fa;
+    --color-card: #ffffff;
+    --color-text: #1f2933;
+    --color-muted: #52606d;
+    --color-border: #d9e2ec;
+    --color-accent: #0b5cad;
+    --color-accent-soft: #e6f0fa;
+    --color-nav-bg: #102a43;
+    --color-nav-text: #d9e2ec;
+    --color-nav-active: #243b53;
+    --color-danger: #b42318;
+    --color-danger-bg: #fdecea;
+    --color-caution: #7a4f00;
+    --color-caution-bg: #fff4d6;
+    --color-success: #1b6e3a;
+    --color-success-bg: #e6f4ea;
+    --color-code-bg: #eef2f6;
+    --color-line: #9fb3c8;
+
+    /* 文字サイズ: 14 / 16 / 18 / 22 / 28 px */
+    --font-small: 0.875rem;
+    --font-body: 1rem;
+    --font-h3: 1.125rem;
+    --font-h2: 1.375rem;
+    --font-h1: 1.75rem;
+
+    /* 余白: 4の倍数 */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+
+    --toc-width: 280px;
+    --content-max: 920px;
+    --radius: 8px;
+    --topbar-height: 56px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+    font-size: var(--font-body);
+    line-height: 1.7;
+  }
+
+  a { color: var(--color-accent); }
+
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: var(--space-4);
+    top: -100px;
+    z-index: 200;
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-card);
+    color: var(--color-accent);
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius);
+  }
+
+  .skip-link:focus { top: var(--space-4); }
+
+  /* ===== 左の目次 ===== */
+  #toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--toc-width);
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--color-nav-bg);
+    color: var(--color-nav-text);
+    padding: var(--space-5) var(--space-4) var(--space-7);
+    z-index: 120;
+  }
+
+  #toc .toc-title {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-small);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+  }
+
+  #toc .toc-lead {
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: var(--font-small);
+    line-height: 1.6;
+  }
+
+  #toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  #toc li { margin: 0; }
+
+  #toc a {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-left: 4px solid transparent;
+    border-radius: 4px;
+    color: var(--color-nav-text);
+    text-decoration: none;
+    font-size: var(--font-small);
+    line-height: 1.5;
+  }
+
+  #toc > nav > ol > li > a {
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: var(--space-2);
+  }
+
+  #toc ol ol a { padding-left: var(--space-5); }
+
+  #toc a:hover { background: var(--color-nav-active); }
+
+  #toc a[aria-current="true"] {
+    background: var(--color-nav-active);
+    border-left-color: #8fc1f2;
+    color: #ffffff;
+  }
+
+  #toc :focus-visible { outline-color: #8fc1f2; }
+
+  #toc-close { display: none; }
+
+  /* ===== 本文 ===== */
+  main {
+    margin-left: var(--toc-width);
+    padding: 0 var(--space-6) var(--space-7);
+  }
+
+  .wrap {
+    max-width: var(--content-max);
+    margin: 0 auto;
+  }
+
+  header.hero {
+    margin: 0 calc(-1 * var(--space-6)) var(--space-6);
+    padding: var(--space-7) var(--space-6) var(--space-6);
+    background: var(--color-card);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .kicker {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: var(--color-accent);
+    letter-spacing: 0.08em;
+  }
+
+  h1 {
+    margin: 0 0 var(--space-4);
+    font-size: var(--font-h1);
+    line-height: 1.4;
+  }
+
+  h2 {
+    margin: var(--space-7) 0 var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-border);
+    font-size: var(--font-h2);
+    line-height: 1.4;
+    scroll-margin-top: var(--space-5);
+  }
+
+  h3 {
+    margin: var(--space-6) 0 var(--space-3);
+    font-size: var(--font-h3);
+    line-height: 1.5;
+    scroll-margin-top: var(--space-5);
+  }
+
+  h4 {
+    margin: var(--space-5) 0 var(--space-2);
+    font-size: var(--font-body);
+  }
+
+  p { margin: 0 0 var(--space-4); }
+
+  ul, ol { margin: 0 0 var(--space-4); padding-left: 1.5em; }
+
+  li { margin-bottom: var(--space-2); }
+
+  .meta {
+    margin: 0;
+    font-size: var(--font-small);
+    color: var(--color-muted);
+  }
+
+  code {
+    padding: 2px 6px;
+    background: var(--color-code-bg);
+    border-radius: 4px;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.875em;
+    overflow-wrap: anywhere;
+  }
+
+  var { font-style: italic; font-family: "Times New Roman", Times, serif; }
+
+  /* 全体の流れ（横並びのカード） */
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+    margin: 0 0 var(--space-5);
+    padding: 0;
+    list-style: none;
+  }
+
+  .flow li {
+    margin: 0;
+    padding: var(--space-4);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-top: 4px solid var(--color-accent);
+    border-radius: var(--radius);
+  }
+
+  .flow .flow-step {
+    display: block;
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  .flow strong { display: block; margin: var(--space-1) 0; overflow-wrap: anywhere; }
+
+  .flow span.flow-detail {
+    display: block;
+    font-size: var(--font-small);
+    color: var(--color-muted);
+  }
+
+  /* ===== 処理フロー図（縦に進む箱と矢印） ===== */
+  .flowchart {
+    margin: 0 0 var(--space-5);
+    padding: 0;
+    list-style: none;
+  }
+
+  .flowchart > li { margin: 0; }
+
+  .flowchart > li + li::before {
+    content: "↓";
+    display: block;
+    text-align: center;
+    color: var(--color-muted);
+    font-weight: 700;
+    line-height: 1.9;
+  }
+
+  .node {
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-left: 6px solid var(--color-accent);
+    border-radius: var(--radius);
+  }
+
+  .node p:last-child, .node ul:last-child { margin-bottom: 0; }
+
+  .node .node-label {
+    display: inline-block;
+    margin-bottom: var(--space-1);
+    padding: 0 var(--space-2);
+    border-radius: 999px;
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-size: var(--font-small);
+    font-weight: 700;
+  }
+
+  .node strong.node-title { display: block; }
+
+  .node .node-detail {
+    display: block;
+    font-size: var(--font-small);
+    color: var(--color-muted);
+  }
+
+  .node.decision { border-left-color: #b7791f; background: var(--color-caution-bg); }
+  .node.decision .node-label { background: #ffe8a3; color: var(--color-caution); }
+  .node.output { border-left-color: var(--color-success); background: var(--color-success-bg); }
+  .node.output .node-label { background: #cdebd6; color: var(--color-success); }
+  .node.terminal { border-left-color: var(--color-muted); background: #eef2f6; }
+  .node.terminal .node-label { background: #dde5ee; color: var(--color-muted); }
+
+  .branch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  .branch > div {
+    padding: var(--space-3);
+    background: var(--color-card);
+    border: 1px dashed var(--color-line);
+    border-radius: var(--radius);
+    font-size: var(--font-small);
+  }
+
+  .branch .branch-label {
+    display: block;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  /* 繰り返し（ループ）の枠 */
+  .loop {
+    margin: 0;
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    border: 2px dashed #8fb3d9;
+    border-radius: var(--radius);
+    background: rgba(230, 240, 250, 0.55);
+  }
+
+  .loop .loop {
+    margin-top: var(--space-2);
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  .loop-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  .loop .flowchart { margin-bottom: 0; }
+
+  /* 呼び出し関係の木 */
+  .tree-root {
+    margin: 0 0 var(--space-5);
+    padding: var(--space-4);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+  }
+
+  .tree-root > p { margin: 0; font-weight: 700; }
+
+  .tree, .tree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 var(--space-4);
+  }
+
+  .tree li {
+    position: relative;
+    margin: 0;
+    padding: 2px 0 2px 22px;
+    white-space: nowrap;
+  }
+
+  .tree li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--color-line);
+  }
+
+  .tree li:last-child::before { bottom: auto; height: 0.95em; }
+
+  .tree li::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.95em;
+    width: 16px;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .tree .tree-note { color: var(--color-muted); font-size: var(--font-small); }
+
+  /* 数式 */
+  .formula {
+    margin: 0 0 var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-family: "Times New Roman", Times, "Hiragino Mincho ProN", serif;
+    font-size: 1.0625rem;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+
+  .formula .formula-note {
+    display: block;
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+    font-size: var(--font-small);
+    color: var(--color-muted);
+  }
+
+  /* 注意書き: 色だけでなく必ずラベル文字を付ける */
+  .callout {
+    margin: var(--space-5) 0;
+    padding: var(--space-4) var(--space-5);
+    border-left: 4px solid;
+    border-radius: var(--radius);
+  }
+
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+
+  .callout .callout-label {
+    display: inline-block;
+    margin-bottom: var(--space-2);
+    padding: 2px var(--space-3);
+    border-radius: 999px;
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .callout.point { background: var(--color-accent-soft); border-color: var(--color-accent); }
+  .callout.point .callout-label { background: var(--color-accent); }
+  .callout.caution { background: var(--color-caution-bg); border-color: #b7791f; }
+  .callout.caution .callout-label { background: var(--color-caution); }
+
+  /* 表 */
+  .table-scroll {
+    margin: 0 0 var(--space-5);
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+    background: var(--color-card);
+    font-size: 0.9375rem;
+  }
+
+  caption {
+    padding: 0 0 var(--space-2);
+    text-align: left;
+    font-weight: 700;
+  }
+
+  th, td {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  thead th {
+    background: #e3eaf2;
+    font-weight: 700;
+  }
+
+  tbody tr:nth-child(even) { background: #fafbfc; }
+
+  td.num { text-align: right; white-space: nowrap; }
+
+  /* コード */
+  .code-block {
+    margin: 0 0 var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-code-bg);
+    overflow: hidden;
+  }
+
+  .code-head {
+    padding: var(--space-2) var(--space-4);
+    background: #dde5ee;
+    font-size: var(--font-small);
+    font-weight: 700;
+    color: var(--color-muted);
+  }
+
+  .code-block pre {
+    margin: 0;
+    padding: var(--space-4);
+    overflow-x: auto;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: var(--font-small);
+    line-height: 1.6;
+  }
+
+  .code-block pre code {
+    padding: 0;
+    background: none;
+    font-size: inherit;
+  }
+
+  /* ===== トップへ戻るボタン（右下） ===== */
+  #to-top {
+    position: fixed;
+    right: var(--space-5);
+    bottom: var(--space-5);
+    z-index: 100;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 48px;
+    padding: 0 var(--space-4);
+    border: none;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease;
+  }
+
+  #to-top.is-visible { opacity: 1; visibility: visible; }
+  #to-top:hover { background: #084a8c; }
+
+  /* ===== 狭い画面用の上部バーと目次の開閉 ===== */
+  .topbar { display: none; }
+  #toc-backdrop { display: none; }
+
+  @media (max-width: 960px) {
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 110;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      height: var(--topbar-height);
+      padding: 0 var(--space-4);
+      background: var(--color-nav-bg);
+      color: #ffffff;
+    }
+
+    .topbar-title {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: var(--font-small);
+      font-weight: 700;
+    }
+
+    #toc-toggle {
+      flex: none;
+      min-width: 72px;
+      min-height: 44px;
+      padding: 0 var(--space-3);
+      border: 1px solid #8fc1f2;
+      border-radius: 6px;
+      background: transparent;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #toc {
+      width: min(86vw, 320px);
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition: transform 0.25s ease, visibility 0.25s;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 開くときは即座に表示して、閉じるボタンへフォーカスを移せるようにする */
+    body.toc-open #toc {
+      transform: translateX(0);
+      visibility: visible;
+      transition: transform 0.25s ease, visibility 0s;
+    }
+
+    #toc-close {
+      display: inline-block;
+      min-width: 88px;
+      min-height: 44px;
+      margin-bottom: var(--space-4);
+      border: 1px solid #8fc1f2;
+      border-radius: 6px;
+      background: transparent;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    body.toc-open #toc-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 115;
+      background: rgba(16, 42, 67, 0.5);
+    }
+
+    main { margin-left: 0; padding: 0 var(--space-4) 112px; }
+    header.hero { margin: 0 calc(-1 * var(--space-4)) var(--space-5); padding: var(--space-6) var(--space-4) var(--space-5); }
+    h2, h3 { scroll-margin-top: calc(var(--topbar-height) + var(--space-4)); }
+    .flow { grid-template-columns: 1fr 1fr; }
+    #to-top { right: var(--space-4); bottom: var(--space-4); }
+  }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 1.375rem; }
+    .flow { grid-template-columns: 1fr; }
+    .branch { grid-template-columns: 1fr; }
+    .loop { padding: var(--space-2) var(--space-2) var(--space-3); }
+  }
+
+  @media print {
+    #toc, #to-top, .topbar { display: none !important; }
+    main { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-title">本文へスキップ</a>
+
+<div class="topbar">
+  <button type="button" id="toc-toggle" aria-controls="toc" aria-expanded="false">目次</button>
+  <span class="topbar-title">高次補正シミュレーション 処理フロー</span>
+</div>
+
+<aside id="toc" aria-label="目次">
+  <button type="button" id="toc-close">閉じる</button>
+  <p class="toc-title">目次</p>
+  <p class="toc-lead">高次補正シミュレーション<br>処理フロー（sim/ のスクリプト）</p>
+  <nav>
+    <ol>
+      <li><a href="#sec-intro">1. この資料について</a>
+        <ol>
+          <li><a href="#intro-guide">1.1 読み方</a></li>
+          <li><a href="#intro-entry">1.2 実行の入口と全体の流れ</a></li>
+          <li><a href="#intro-calls">1.3 ファイルと関数の呼び出し関係</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-config">2. 実験条件</a></li>
+      <li><a href="#sec-runall">3. run_all の処理フロー</a>
+        <ol>
+          <li><a href="#runall-overview">3.1 全体フロー</a></li>
+          <li><a href="#runall-geometry">3.2 座標を作る</a></li>
+          <li><a href="#runall-variants">3.3 補正式とVIF削減版を作る</a></li>
+          <li><a href="#runall-shots">3.4 Shotを生成する</a></li>
+          <li><a href="#runall-methods">3.5 回帰手法の一覧を作る</a></li>
+          <li><a href="#runall-loop">3.6 回帰と評価のループ</a></li>
+          <li><a href="#runall-combined">3.7 dx・dyをまとめて要約する</a></li>
+          <li><a href="#runall-reference">3.8 参考値を求める</a></li>
+          <li><a href="#runall-compare">3.9 条件どうしを比べる</a></li>
+          <li><a href="#runall-sweep">3.10 λの感度解析</a></li>
+          <li><a href="#runall-save">3.11 保存する</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-model">4. 補正式とVIF</a>
+        <ol>
+          <li><a href="#model-terms">4.1 補正式の定義</a></li>
+          <li><a href="#model-design">4.2 設計行列</a></li>
+          <li><a href="#model-vif">4.3 VIFの計算</a></li>
+          <li><a href="#model-reduce">4.4 VIFによる項の削除</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-fit">5. 回帰計算（fit_batch）</a>
+        <ol>
+          <li><a href="#fit-io">5.1 入力と出力</a></li>
+          <li><a href="#fit-objective">5.2 目的関数</a></li>
+          <li><a href="#fit-flow">5.3 全体フロー</a></li>
+          <li><a href="#fit-irls">5.4 IRLSの重みと尺度</a></li>
+          <li><a href="#fit-solve">5.5 最小二乗とL2</a></li>
+          <li><a href="#fit-lasso">5.6 L1（座標降下法）</a></li>
+          <li><a href="#fit-warnings">5.7 収束の判定と警告</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-metrics">6. 評価指標</a></li>
+      <li><a href="#sec-outputs">7. 図と表の出力</a>
+        <ol>
+          <li><a href="#outputs-figures">7.1 図（make_figures）</a></li>
+          <li><a href="#outputs-tables">7.2 表の行（write_tex_tables）</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-data">8. 出力ファイルとデータ構造</a>
+        <ol>
+          <li><a href="#data-csv">8.1 CSVファイル</a></li>
+          <li><a href="#data-mat">8.2 保存する変数</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec-cost">9. 計算量と注意点</a></li>
+    </ol>
+  </nav>
+</aside>
+<div id="toc-backdrop"></div>
+
+<main>
+  <div class="wrap">
+    <header class="hero">
+      <p class="kicker">処理フロー資料</p>
+      <h1 id="main-title" tabindex="-1">高次補正シミュレーション 処理フロー<br>（評価スクリプトの詳細）</h1>
+      <p>Shot高次補正の回帰手法を比べたシミュレーション（<code>sim/</code> のMATLABスクリプト）が、どの順番で何を計算しているかをまとめた資料です。実験条件、乱数によるShotの作り方、回帰計算の中身、評価指標、出力ファイルまでを関数ごとに説明します。</p>
+      <p class="meta">リポジトリ: rsakamoto-0824/high-order-correction-report ／ 作成日: 2026-09-15 ／ 対象: <code>sim/</code> の11ファイル（MATLAB R2022b）</p>
+    </header>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-intro">
+      <h2 id="sec-intro">1. この資料について</h2>
+
+      <h3 id="intro-guide">1.1 読み方</h3>
+      <div class="table-scroll">
+        <table>
+          <caption>知りたいことと読む章</caption>
+          <thead>
+            <tr><th scope="col">知りたいこと</th><th scope="col">読む章</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>計算全体の流れをつかみたい</td><td>1.2節、1.3節、3.1節</td></tr>
+            <tr><td>計算条件の値と、その値がどこで使われるかを確認したい</td><td>2章</td></tr>
+            <tr><td>乱数でShotと測定誤差をどう作っているかを知りたい</td><td>3.4節</td></tr>
+            <tr><td>OLS・LAD・Huber、L1・L2、罰則の対象の違いを計算の中身から知りたい</td><td>3.5節、5章</td></tr>
+            <tr><td>レポートの表や図の数値がどの計算から来ているかを知りたい</td><td>6章、7章</td></tr>
+            <tr><td>CSVファイルの列の意味を知りたい</td><td>8章</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>実行方法（MATLABでの操作やOverleafでの編集）は、利用手順書 <a href="usage-guide.html">usage-guide.html</a> を参照してください。この資料は、スクリプトの中身の説明に絞っています。</p>
+      <div class="callout point">
+        <span class="callout-label">ポイント</span>
+        <p>記号の意味: <var>n</var> はマーク数（35）、<var>p</var> は補正式の項数、<var>S</var> はShot数（1000）、<var>T</var> は真の歪みの項数です。行列の大きさは「行数×列数」で書きます。</p>
+      </div>
+
+      <h3 id="intro-entry">1.2 実行の入口と全体の流れ</h3>
+      <p>計算をするのは <code>run_all</code> だけです。<code>make_figures</code> と <code>write_tex_tables</code> は、<code>run_all</code> が保存した <code>results/simulation_results.mat</code> を読み込んで、図と表の行を作ります。</p>
+      <ol class="flow">
+        <li><span class="flow-step">手順1</span><strong>run_all</strong><span class="flow-detail">Shotの生成、回帰、評価、CSVと .mat の保存</span></li>
+        <li><span class="flow-step">手順2</span><strong>make_figures</strong><span class="flow-detail">.mat を読み、図（PNG）を4枚作る</span></li>
+        <li><span class="flow-step">手順3</span><strong>write_tex_tables</strong><span class="flow-detail">.mat を読み、LaTeXの表の行を作る</span></li>
+        <li><span class="flow-step">手順4</span><strong>main.tex</strong><span class="flow-detail">表の行と本文の数値を反映する（手作業）</span></li>
+      </ol>
+      <div class="code-block">
+        <div class="code-head">MATLAB（sim フォルダで実行）</div>
+        <pre><code>run_all          % 1000 Shot で計算する。run_all(50) なら 50 Shot
+make_figures     % report/figures/ に図を出力する
+write_tex_tables % results/tex/ に表の行を出力する</code></pre>
+      </div>
+
+      <h3 id="intro-calls">1.3 ファイルと関数の呼び出し関係</h3>
+      <p>ファイル名（<code>.m</code> 付き）は独立したファイル、それ以外は同じファイルの中にあるローカル関数です。</p>
+      <div class="tree-root">
+        <p><code>run_all.m</code></p>
+        <ul class="tree">
+          <li><code>simulation_config.m</code> <span class="tree-note">実験条件を読み込む</span></li>
+          <li><code>build_geometry</code> <span class="tree-note">マーク座標と評価グリッド</span></li>
+          <li><code>build_model_variants</code> <span class="tree-note">補正式とVIF削減版</span>
+            <ul>
+              <li><code>model_terms.m</code> <span class="tree-note">ASML式・ニコン式の項</span></li>
+              <li><code>design_matrix.m</code> <span class="tree-note">設計行列</span></li>
+              <li><code>compute_vif.m</code> <span class="tree-note">VIF</span></li>
+              <li><code>reduce_terms_by_vif.m</code> <span class="tree-note">項の削除（中で compute_vif.m を使う）</span></li>
+              <li><code>monomial_label.m</code> <span class="tree-note">項の表示名</span></li>
+              <li><code>make_design</code> <span class="tree-note">列の標準化</span></li>
+            </ul>
+          </li>
+          <li><code>generate_shots.m</code> <span class="tree-note">真の歪みと測定値（中で model_terms.m、design_matrix.m を使う）</span></li>
+          <li><code>build_methods</code> <span class="tree-note">15種類の手法（中で method_name を使う）</span></li>
+          <li><code>penalty_mask</code> <span class="tree-note">罰則をかける項</span></li>
+          <li><code>fit_batch.m</code> <span class="tree-note">回帰計算</span>
+            <ul>
+              <li><code>robust_weights</code> <span class="tree-note">LAD・Huberの重み</span></li>
+              <li><code>solve_weighted</code> <span class="tree-note">罰則の種類で分岐</span>
+                <ul>
+                  <li><code>weighted_least_squares</code> <span class="tree-note">最小二乗とL2</span></li>
+                  <li><code>weighted_lasso</code> <span class="tree-note">L1（座標降下法）</span></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li><code>summarize_combined</code> <span class="tree-note">dx・dyをまとめた要約（中で combined_rms を使う）</span></li>
+          <li><code>compute_reference</code> <span class="tree-note">補正なし・表現限界</span></li>
+          <li><code>compare_conditions</code> <span class="tree-note">条件どうしの比較</span>
+            <ul>
+              <li><code>comparison_pairs</code> <span class="tree-note">比べる組の一覧</span></li>
+              <li><code>combined_rms</code></li>
+            </ul>
+          </li>
+          <li><code>sweep_lambda</code> <span class="tree-note">λの感度解析（中で build_methods、penalty_mask、fit_batch.m を使う）</span></li>
+        </ul>
+      </div>
+      <div class="tree-root">
+        <p><code>make_figures.m</code></p>
+        <ul class="tree">
+          <li><code>plot_shot_example</code> <span class="tree-note">図1（中で prepare_shot_axes を使う）</span></li>
+          <li><code>plot_vif</code> <span class="tree-note">図2</span></li>
+          <li><code>plot_residual_box</code> <span class="tree-note">図3（中で combined_rms を使う）</span></li>
+          <li><code>plot_lambda_sweep</code> <span class="tree-note">図4（中で combined_rms を使う）</span></li>
+          <li><code>new_figure</code> / <code>save_figure</code> <span class="tree-note">図の作成と保存</span></li>
+        </ul>
+      </div>
+      <div class="tree-root">
+        <p><code>write_tex_tables.m</code></p>
+        <ul class="tree">
+          <li><code>write_summary_rows</code> <span class="tree-note">補正残差の表</span></li>
+          <li><code>write_within_model_rows</code> <span class="tree-note">同じ補正式の中での比較の表</span></li>
+          <li><code>write_vif_effect_rows</code> <span class="tree-note">VIFによる事前削除の効果の表</span></li>
+          <li><code>write_vif_rows</code> / <code>write_reference_rows</code></li>
+          <li><code>method_label</code> / <code>scope_label</code> / <code>pretty_method</code> / <code>bold_if_best</code> / <code>open_file</code> <span class="tree-note">表示名と書式</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-config">
+      <h2 id="sec-config">2. 実験条件（simulation_config.m）</h2>
+      <p>条件はすべて <code>simulation_config</code> が返す構造体 <code>cfg</code> にまとまっています。<code>run_all(50)</code> のように引数を付けると、<code>cfg.shotCount</code> だけが上書きされます。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>cfg の項目</caption>
+          <thead>
+            <tr><th scope="col">分類</th><th scope="col">変数</th><th scope="col">値</th><th scope="col">意味と使われる場所</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>再現性</td><td><code>randomSeed</code></td><td class="num">20260913</td><td>乱数のシード。<code>run_all</code> の最初に <code>rng(randomSeed, 'twister')</code> で設定する</td></tr>
+            <tr><td rowspan="5">Shotとマーク</td><td><code>shotHalfWidthMm</code></td><td class="num">13.0</td><td>Shotの半幅 [mm]（x: スリット方向）。評価グリッドの範囲と、真の係数の換算に使う</td></tr>
+            <tr><td><code>shotHalfHeightMm</code></td><td class="num">16.5</td><td>Shotの半高さ [mm]（y: スキャン方向）</td></tr>
+            <tr><td><code>markXmm</code></td><td class="num">−12, −6, 0, 6, 12</td><td>マークの x 座標 [mm]（5列）</td></tr>
+            <tr><td><code>markYmm</code></td><td class="num">−15.5〜15.5 の7行</td><td>マークの y 座標 [mm]（等間隔）。ニコン式の y<sup>6</sup> を解くには7行以上が必要</td></tr>
+            <tr><td><code>evalGridCount</code></td><td class="num">21</td><td>補正残差を評価するグリッドの1辺の点数（21×21 = 441点）</td></tr>
+            <tr><td rowspan="3">真の歪み</td><td><code>shotCount</code></td><td class="num">1000</td><td>生成するShot数 <var>S</var></td></tr>
+            <tr><td><code>truthSigmaNmByOrder</code></td><td class="num">2.0, 2.0, 0.8, 0.6, 0.4, 0.4, 0.4</td><td>次数0〜6の係数の標準偏差 [nm]。Shot端での変位量で表した値</td></tr>
+            <tr><td><code>truthActiveProbByOrder</code></td><td class="num">1.0, 1.0, 0.5, 0.5, 0.3, 0.3, 0.3</td><td>次数0〜6の項がそのShotに現れる確率</td></tr>
+            <tr><td rowspan="4">測定誤差</td><td><code>noiseSigmaNm</code></td><td class="num">0.3</td><td>偶然誤差の標準偏差 [nm]</td></tr>
+            <tr><td><code>outlierProbability</code></td><td class="num">0.05</td><td>マークが異常値になる確率</td></tr>
+            <tr><td><code>outlierMinNm</code></td><td class="num">3.0</td><td>異常値の大きさの下限 [nm]</td></tr>
+            <tr><td><code>outlierMaxNm</code></td><td class="num">8.0</td><td>異常値の大きさの上限 [nm]</td></tr>
+            <tr><td>VIF</td><td><code>vifThreshold</code></td><td class="num">10</td><td>項を削除するVIFのしきい値</td></tr>
+            <tr><td rowspan="6">ロバスト回帰</td><td><code>huberTuning</code></td><td class="num">1.345</td><td>Huberの定数 <var>c</var></td></tr>
+            <tr><td><code>madToSigma</code></td><td class="num">1.4826</td><td>MAD（中央値絶対偏差）を標準偏差に換算する係数</td></tr>
+            <tr><td><code>ladMinResidualRatio</code></td><td class="num">0.1</td><td>LADの重みで使う残差の下限（尺度 <var>s</var> に対する比 <var>δ</var>）</td></tr>
+            <tr><td><code>irlsScaleUpdateIter</code></td><td class="num">20</td><td>尺度 <var>s</var> を更新する反復回数。以後は固定する</td></tr>
+            <tr><td><code>irlsMaxIter</code></td><td class="num">1000</td><td>IRLSの反復の上限</td></tr>
+            <tr><td><code>irlsTolNm</code></td><td class="num">1e−5</td><td>係数の変化 [nm] がこれ未満になったShotは反復を止める</td></tr>
+            <tr><td rowspan="4">正則化</td><td><code>lambdaL1</code></td><td class="num">0.3 / √35 ≈ 0.0507</td><td>L1の強さ <var>λ</var><sub>1</sub>。<code>noiseSigmaNm / sqrt(マーク数)</code> で計算する</td></tr>
+            <tr><td><code>lambdaL2</code></td><td class="num">0.1</td><td>L2の強さ <var>λ</var><sub>2</sub></td></tr>
+            <tr><td><code>cdMaxSweep</code></td><td class="num">20000</td><td>L1の座標降下法の反復（全項を1周＝1回）の上限</td></tr>
+            <tr><td><code>cdTolNm</code></td><td class="num">1e−7</td><td>座標降下法の収束判定の値</td></tr>
+            <tr><td>感度解析</td><td><code>lambdaScaleList</code></td><td class="num">0.25, 0.5, 1, 2, 4, 8</td><td>λを固定値の何倍にするか</td></tr>
+            <tr><td rowspan="2">出力先</td><td><code>resultDir</code></td><td><code>../results</code></td><td>CSV、.mat、表の行の保存先（<code>sim</code> フォルダから見た位置）</td></tr>
+            <tr><td><code>figureDir</code></td><td><code>../report/figures</code></td><td>図の保存先</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-runall">
+      <h2 id="sec-runall">3. run_all の処理フロー</h2>
+
+      <h3 id="runall-overview">3.1 全体フロー</h3>
+      <ol class="flowchart">
+        <li><div class="node terminal"><span class="node-label">開始</span><strong class="node-title">条件を読み、準備する</strong>
+          <span class="node-detail"><code>cfg = simulation_config()</code>。引数があれば1以上か確認し、<code>cfg.shotCount</code> を上書き（1未満ならエラー）。<code>results/</code> と <code>report/figures/</code> がなければ作る。<code>rng(20260913, 'twister')</code> で乱数を初期化し、経過時間の計測を始める。</span></div></li>
+        <li><div class="node"><span class="node-label">手順1</span><strong class="node-title">座標を作る（build_geometry）</strong>
+          <span class="node-detail">マーク35点と評価グリッド441点の座標 [mm] → <code>geometry</code>（3.2節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順2</span><strong class="node-title">補正式とVIF削減版を作る（build_model_variants）</strong>
+          <span class="node-detail">ASML式・ニコン式の設計行列、VIF、削除する項 → <code>variants</code>（ASML、Nikon、Nikon-VIF）と <code>vif_table.csv</code>（3.3節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順3</span><strong class="node-title">Shotを生成する（generate_shots）</strong>
+          <span class="node-detail">真の歪み、偶然誤差、異常値を乱数で作る → <code>data</code>（3.4節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順4</span><strong class="node-title">回帰手法の一覧を作る（build_methods）</strong>
+          <span class="node-detail">損失関数3種類×罰則の条件5種類 = 15手法 → <code>methods</code>（3.5節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順5</span><strong class="node-title">回帰と評価のループ</strong>
+          <span class="node-detail">シナリオ2×補正式3×軸2×手法15 = 180回の <code>fit_batch</code>。Shotごとの残差RMS → <code>rmsTrue</code>、<code>rmsApparent</code>、<code>summary.csv</code>（3.6節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順6</span><strong class="node-title">dx・dyをまとめて要約する（summarize_combined）</strong>
+          <span class="node-detail">→ <code>summary_combined.csv</code>（3.7節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順7</span><strong class="node-title">参考値を求める（compute_reference）</strong>
+          <span class="node-detail">補正なしの歪みと、各補正式の表現限界 → <code>reference.csv</code>（3.8節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順8</span><strong class="node-title">条件どうしを比べる（compare_conditions）</strong>
+          <span class="node-detail">低減率と勝率 → <code>comparisons.csv</code>（3.9節）</span></div></li>
+        <li><div class="node"><span class="node-label">手順9</span><strong class="node-title">λの感度解析（sweep_lambda）</strong>
+          <span class="node-detail">異常値ありのデータで、Huber回帰＋罰則のλを変える。144回の <code>fit_batch</code> → <code>lambda_sweep.csv</code>（3.10節）</span></div></li>
+        <li><div class="node output"><span class="node-label">終了</span><strong class="node-title">保存する</strong>
+          <span class="node-detail">全変数を <code>simulation_results.mat</code> に保存し、「完了: … 秒。」と表示する（3.11節）</span></div></li>
+      </ol>
+
+      <h3 id="runall-geometry">3.2 座標を作る（build_geometry）</h3>
+      <p>座標はすべてShot中心を原点とするmm単位です。補正式の <var>x</var>, <var>y</var> にこの値をそのまま使います（正規化はしません）。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>geometry の中身</caption>
+          <thead>
+            <tr><th scope="col">変数</th><th scope="col">大きさ</th><th scope="col">作り方</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>markX</code>, <code>markY</code></td><td class="num">35×1</td><td><code>meshgrid(markXmm, markYmm)</code> を列ベクトルにしたもの。x の列ごとに y が7行並ぶ順番（列優先）</td></tr>
+            <tr><td><code>evalX</code>, <code>evalY</code></td><td class="num">441×1</td><td>x を −13〜13 mm、y を −16.5〜16.5 mm でそれぞれ21等分した格子。Shot端を含むため、マークの外側（|x| &gt; 12 mm、|y| &gt; 15.5 mm）も評価する</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="runall-variants">3.3 補正式とVIF削減版を作る（build_model_variants）</h3>
+      <p>ASML式とニコン式のそれぞれについて、dx の式と dy の式を順に処理します。</p>
+      <div class="loop">
+        <span class="loop-label">繰り返し: 補正式（ASML → Nikon）</span>
+        <div class="loop">
+          <span class="loop-label">繰り返し: 軸（x = dx の式 → y = dy の式）</span>
+          <ol class="flowchart">
+            <li><div class="node"><span class="node-label">a</span><strong class="node-title">項を読む</strong><span class="node-detail"><code>model_terms</code> から指数 <code>exp</code>（<var>p</var>×2）と係数名 <code>name</code>（例: k1, k3, …）を取り出す（4.1節）</span></div></li>
+            <li><div class="node"><span class="node-label">b</span><strong class="node-title">マーク位置の設計行列を作る</strong><span class="node-detail"><code>Araw = design_matrix(markX, markY, exp)</code>（35×<var>p</var>、4.2節）</span></div></li>
+            <li><div class="node"><span class="node-label">c</span><strong class="node-title">全項のVIFを計算する</strong><span class="node-detail"><code>vifFull = compute_vif(Araw, exp)</code>（4.3節）</span></div></li>
+            <li><div class="node"><span class="node-label">d</span><strong class="node-title">VIFで項を削除する</strong><span class="node-detail"><code>[keepMask, removalLog] = reduce_terms_by_vif(Araw, exp, 10)</code>（4.4節）。残した項だけでVIFを計算し直して <code>vifAfter</code> とする</span></div></li>
+            <li><div class="node"><span class="node-label">e</span><strong class="node-title">VIFの表の行を作る</strong><span class="node-detail">項ごとに Model, Axis, Term, Monomial, Order, VIF, Kept, RemovalOrder, VIFAfter</span></div></li>
+            <li><div class="node"><span class="node-label">f</span><strong class="node-title">回帰用の設計を作る（make_design）</strong><span class="node-detail">全項版と、残した項だけの削減版の2つ</span></div></li>
+          </ol>
+        </div>
+        <ol class="flowchart">
+          <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">dx・dy のどちらかで削除した項があるか</strong>
+            <div class="branch">
+              <div><span class="branch-label">ある</span>元の式（例: <code>Nikon</code>）と削減版（<code>Nikon-VIF</code>）の両方を <code>variants</code> に加える</div>
+              <div><span class="branch-label">ない</span>削減版は元の式と同じなので、元の式（例: <code>ASML</code>）だけを加える</div>
+            </div></div></li>
+        </ol>
+      </div>
+      <p>現在の条件（マーク5×7点）では、次の3種類になります。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>作られる補正式（variants）</caption>
+          <thead>
+            <tr><th scope="col">名前</th><th scope="col">dx の項数</th><th scope="col">dy の項数</th><th scope="col">備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>ASML</code></td><td class="num">7</td><td class="num">8</td><td>最大VIFが dx 9.0、dy 7.4 でしきい値未満。削減版は作らない</td></tr>
+            <tr><td><code>Nikon</code></td><td class="num">12</td><td class="num">15</td><td>ニコン式そのもの</td></tr>
+            <tr><td><code>Nikon-VIF</code></td><td class="num">8</td><td class="num">10</td><td>dx は y<sup>6</sup>, y<sup>5</sup>, y<sup>4</sup>, x<sup>3</sup>、dy は y<sup>6</sup>, xy<sup>5</sup>, y<sup>5</sup>, xy<sup>4</sup>, y<sup>4</sup> の順に削除</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>make_design（列の標準化）</h4>
+      <p>罰則の効き方を項の間でそろえるため、切片以外の列を、マーク35点での平均0・標準偏差1に変換します。評価グリッドの列にも、マーク位置で求めた同じ平均と標準偏差を使います。</p>
+      <div class="formula">
+        center<sub><var>j</var></sub> = mean<sub>i</sub>(Araw<sub><var>ij</var></sub>)，scale<sub><var>j</var></sub> = std<sub>i</sub>(Araw<sub><var>ij</var></sub>)（<var>n</var> で割る標準偏差）<br>
+        Astd<sub><var>ij</var></sub> = (Araw<sub><var>ij</var></sub> − center<sub><var>j</var></sub>) / scale<sub><var>j</var></sub>，Aeval<sub><var>kj</var></sub> = (Xeval<sub><var>kj</var></sub> − center<sub><var>j</var></sub>) / scale<sub><var>j</var></sub>
+        <span class="formula-note">切片の列（指数 [0 0]）だけは center = 0、scale = 1（すべて1のまま）</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <caption>設計（variants(v).x / variants(v).y）の中身</caption>
+          <thead>
+            <tr><th scope="col">変数</th><th scope="col">大きさ</th><th scope="col">内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>exponents</code></td><td class="num"><var>p</var>×2</td><td>項の指数 [m n]（x<sup>m</sup>y<sup>n</sup>）</td></tr>
+            <tr><td><code>names</code></td><td class="num">1×<var>p</var></td><td>係数番号（k1, k3, …）</td></tr>
+            <tr><td><code>Astd</code></td><td class="num">35×<var>p</var></td><td>マーク位置の標準化した設計行列（回帰に使う）</td></tr>
+            <tr><td><code>Aeval</code></td><td class="num">441×<var>p</var></td><td>評価グリッドの設計行列（同じ変換）</td></tr>
+            <tr><td><code>isHighOrder</code></td><td class="num"><var>p</var>×1</td><td>2次以上の項なら true（罰則を高次項のみにかけるときに使う）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <p>回帰で求まる係数 <var>θ</var> は標準化した列に対する値で、kパラメータそのものではありません。kパラメータに直すには、切片以外は k<sub><var>j</var></sub> = <var>θ</var><sub><var>j</var></sub> / scale<sub><var>j</var></sub>、切片は k = <var>θ</var><sub>切片</sub> − Σ<sub><var>j</var></sub> <var>θ</var><sub><var>j</var></sub>·center<sub><var>j</var></sub> / scale<sub><var>j</var></sub> とします。現在のスクリプトはkパラメータを出力していません（評価には補正値だけを使うため）。</p>
+      </div>
+
+      <h3 id="runall-shots">3.4 Shotを生成する（generate_shots）</h3>
+      <p>真の歪みの項は、ASML式とニコン式の項の和集合です（<code>model_terms('Truth')</code>）。ASML式の項はすべてニコン式に含まれるので、結果としてニコン式と同じ項（dx 12項、dy 15項）になります。</p>
+      <p>乱数は次の順番で使います。この順番が変わると、同じシードでも別のShotになります。</p>
+      <ol class="flowchart">
+        <li><div class="node"><span class="node-label">1</span><strong class="node-title">異常値にするマークを決める</strong>
+          <span class="node-detail"><code>isOutlierMark = rand(35, S) &lt; 0.05</code>。dx と dy で共通（同じマークの両方の測定値が異常値になる）</span></div></li>
+        <li>
+          <div class="loop">
+            <span class="loop-label">繰り返し: 軸（x → y）</span>
+            <ol class="flowchart">
+              <li><div class="node"><span class="node-label">2</span><strong class="node-title">項がそのShotに現れるかを決める</strong>
+                <span class="node-detail"><code>isActive = rand(T, S) &lt; 出現確率(次数)</code></span></div></li>
+              <li><div class="node"><span class="node-label">3</span><strong class="node-title">係数を作る</strong>
+                <span class="node-detail"><code>coefficient = randn(T, S) × σ(次数) × isActive ÷ (13<sup>m</sup> × 16.5<sup>n</sup>)</code>。σ はShot端での変位量なので、Shot端の座標のべき乗で割ってmm単位の係数 [nm/mm<sup>次数</sup>] にする</span></div></li>
+              <li><div class="node"><span class="node-label">4</span><strong class="node-title">真の歪みを計算する</strong>
+                <span class="node-detail">マーク位置 <code>trueAtMarks</code>（35×S）と評価グリッド <code>trueAtEval</code>（441×S）。どちらも「設計行列×係数」（標準化はしない）</span></div></li>
+              <li><div class="node"><span class="node-label">5</span><strong class="node-title">偶然誤差を作る</strong>
+                <span class="node-detail"><code>noise = 0.3 × randn(35, S)</code></span></div></li>
+              <li><div class="node"><span class="node-label">6</span><strong class="node-title">異常値の大きさと符号を作る</strong>
+                <span class="node-detail">大きさ <code>3 + 5 × rand(35, S)</code>、符号 <code>2 × (rand(35, S) &lt; 0.5) − 1</code>。異常マーク以外では0にする</span></div></li>
+              <li><div class="node output"><span class="node-label">7</span><strong class="node-title">測定値を作る</strong>
+                <span class="node-detail">異常値なし <code>measuredClean = trueAtMarks + noise</code><br>異常値あり <code>measuredOutlier = trueAtMarks + noise + outlier</code><br>2つは同じ偶然誤差を共有するので、異常値の有無だけを比べられる</span></div></li>
+            </ol>
+          </div>
+        </li>
+      </ol>
+      <div class="table-scroll">
+        <table>
+          <caption>真の歪みの項（係数を作る順番）</caption>
+          <thead>
+            <tr><th scope="col">軸</th><th scope="col">項数 <var>T</var></th><th scope="col">項（x<sup>m</sup>y<sup>n</sup>）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>dx</td><td class="num">12</td><td>1, x, y, x<sup>2</sup>, y<sup>2</sup>, x<sup>3</sup>, y<sup>3</sup>（ここまでASML式）, xy, xy<sup>2</sup>, y<sup>4</sup>, y<sup>5</sup>, y<sup>6</sup></td></tr>
+            <tr><td>dy</td><td class="num">15</td><td>1, y, x, y<sup>2</sup>, xy, x<sup>2</sup>, y<sup>3</sup>, xy<sup>2</sup>（ここまでASML式）, x<sup>2</sup>y, y<sup>4</sup>, xy<sup>3</sup>, y<sup>5</sup>, xy<sup>4</sup>, y<sup>6</sup>, xy<sup>5</sup></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <caption>data の中身</caption>
+          <thead>
+            <tr><th scope="col">変数</th><th scope="col">大きさ</th><th scope="col">内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>data.isOutlierMark</code></td><td class="num">35×S</td><td>異常値のマークなら true</td></tr>
+            <tr><td><code>data.x.coefficient</code> / <code>data.y.coefficient</code></td><td class="num">T×S</td><td>真の係数 [nm/mm<sup>次数</sup>]</td></tr>
+            <tr><td><code>data.x.trueAtMarks</code> など</td><td class="num">35×S</td><td>マーク位置の真の歪み [nm]</td></tr>
+            <tr><td><code>data.x.trueAtEval</code> など</td><td class="num">441×S</td><td>評価グリッドの真の歪み [nm]</td></tr>
+            <tr><td><code>data.x.measuredClean</code> など</td><td class="num">35×S</td><td>異常値なしの測定値 [nm]</td></tr>
+            <tr><td><code>data.x.measuredOutlier</code> など</td><td class="num">35×S</td><td>異常値ありの測定値 [nm]</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="runall-methods">3.5 回帰手法の一覧を作る（build_methods）</h3>
+      <p>損失関数ごとに「罰則なし、L2・L1を高次項のみ、L2・L1を全項」の5種類を作ります。手法は構造体（<code>name</code>, <code>loss</code>, <code>penalty</code>, <code>scope</code>）で表します。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>15種類の手法（この順番で計算し、表にも並べる）</caption>
+          <thead>
+            <tr><th scope="col">番号</th><th scope="col">手法名 <code>name</code></th><th scope="col">損失 <code>loss</code></th><th scope="col">罰則 <code>penalty</code></th><th scope="col">罰則の対象 <code>scope</code></th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">1</td><td><code>OLS</code></td><td>OLS</td><td>none</td><td>none</td></tr>
+            <tr><td class="num">2</td><td><code>OLS+L2(HO)</code></td><td>OLS</td><td>L2</td><td>HO（高次項のみ）</td></tr>
+            <tr><td class="num">3</td><td><code>OLS+L1(HO)</code></td><td>OLS</td><td>L1</td><td>HO</td></tr>
+            <tr><td class="num">4</td><td><code>OLS+L2(All)</code></td><td>OLS</td><td>L2</td><td>All（全項）</td></tr>
+            <tr><td class="num">5</td><td><code>OLS+L1(All)</code></td><td>OLS</td><td>L1</td><td>All</td></tr>
+            <tr><td class="num">6〜10</td><td><code>LAD</code>, <code>LAD+L2(HO)</code>, <code>LAD+L1(HO)</code>, <code>LAD+L2(All)</code>, <code>LAD+L1(All)</code></td><td>LAD</td><td colspan="2">1〜5と同じ並び</td></tr>
+            <tr><td class="num">11〜15</td><td><code>Huber</code>, <code>Huber+L2(HO)</code>, <code>Huber+L1(HO)</code>, <code>Huber+L2(All)</code>, <code>Huber+L1(All)</code></td><td>Huber</td><td colspan="2">1〜5と同じ並び</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>penalty_mask(design, scope)</code> は、罰則をかける項を表す論理ベクトル（<var>p</var>×1）を返します。<code>All</code> ならすべて true、<code>HO</code> なら <code>design.isHighOrder</code>（2次以上の項だけ true）、罰則なしならすべて false です。</p>
+
+      <h3 id="runall-loop">3.6 回帰と評価のループ</h3>
+      <div class="loop">
+        <span class="loop-label">繰り返し: シナリオ（outlier: 異常値あり → clean: 異常値なし）</span>
+        <div class="loop">
+          <span class="loop-label">繰り返し: 補正式（ASML → Nikon → Nikon-VIF）</span>
+          <div class="loop">
+            <span class="loop-label">繰り返し: 軸（x → y）。測定値 <code>measured</code> は、シナリオに応じて measuredOutlier か measuredClean（35×S）</span>
+            <div class="loop">
+              <span class="loop-label">繰り返し: 手法（15種類）</span>
+              <ol class="flowchart">
+                <li><div class="node"><span class="node-label">1</span><strong class="node-title">罰則をかける項を決める</strong><span class="node-detail"><code>isPenalized = penalty_mask(design, method.scope)</code></span></div></li>
+                <li><div class="node"><span class="node-label">2</span><strong class="node-title">回帰する（1000 Shotをまとめて）</strong><span class="node-detail"><code>theta = fit_batch(design.Astd, measured, method, isPenalized, λ1, λ2, cfg)</code> → <var>p</var>×S（5章）</span></div></li>
+                <li><div class="node"><span class="node-label">3</span><strong class="node-title">Shot全面の補正残差を計算する</strong><span class="node-detail"><code>trueResidual = trueAtEval − Aeval × theta</code>（441×S）→ <code>rmsTrue{sc, v, m, a}</code> = 列ごとの二乗平均平方根（1×S）</span></div></li>
+                <li><div class="node"><span class="node-label">4</span><strong class="node-title">測定点での見かけの残差を計算する</strong><span class="node-detail"><code>measured − Astd × theta</code>（35×S）→ <code>rmsApparent{sc, v, m, a}</code>（1×S）</span></div></li>
+                <li><div class="node output"><span class="node-label">5</span><strong class="node-title">要約の行を作り、進み具合を表示する</strong><span class="node-detail">中央値、95パーセンタイル、|平均|+3σ、見かけの残差の中央値（6章）。例: <code>[  82.0s] outlier Nikon OLS+L1(HO) dy median RMS = 0.493 nm</code></span></div></li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p>ループが終わると、行をまとめて <code>summary.csv</code> に書き出します。<code>fit_batch</code> の呼び出しは 2×3×2×15 = 180回で、1回ごとに1000 Shotを処理します。</p>
+
+      <h3 id="runall-combined">3.7 dx・dyをまとめて要約する（summarize_combined）</h3>
+      <p>レポートの表では、dx と dy の残差RMSをShotごとに1つの値にまとめて使います。</p>
+      <div class="formula">
+        RMS<sub>まとめ</sub>(Shot <var>s</var>) = √( ( RMS<sub>dx</sub>(<var>s</var>)<sup>2</sup> + RMS<sub>dy</sub>(<var>s</var>)<sup>2</sup> ) / 2 )
+        <span class="formula-note">局所関数 combined_rms。見かけの残差にも同じ式を使う</span>
+      </div>
+      <p>シナリオ×補正式×手法ごとに、まとめた値の中央値、95パーセンタイル、見かけの残差の中央値を <code>summary_combined.csv</code>（90行）に書き出します。</p>
+
+      <h3 id="runall-reference">3.8 参考値を求める（compute_reference）</h3>
+      <ul>
+        <li><strong>補正なし</strong>: 評価グリッドの真の歪みそのもののRMS（<code>rawRms</code>）。</li>
+        <li><strong>表現限界</strong>: 雑音のない真の歪みを、評価グリッドの441点すべてで最小二乗法により当てはめたときの残差RMS（<code>floorRms</code>）。<code>Aeval \ trueAtEval</code> で解きます。その補正式の項では表せない歪みの大きさを表します。</li>
+      </ul>
+      <p>軸ごと・条件ごとの中央値と95パーセンタイルを <code>reference.csv</code>（dx・dy それぞれ4行、計8行）に書き出します。</p>
+
+      <h3 id="runall-compare">3.9 条件どうしを比べる（compare_conditions / comparison_pairs）</h3>
+      <p><code>comparison_pairs</code> が比べる組（条件Aと条件B）を作り、<code>compare_conditions</code> がシナリオごとに同じShotどうしで比べます。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>比較の観点（Group）と組の作り方（1シナリオあたり）</caption>
+          <thead>
+            <tr><th scope="col">Group</th><th scope="col">条件A</th><th scope="col">条件B</th><th scope="col">区分 Block</th><th scope="col">組の数</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Scope</code></td><td>損失+罰則（高次項のみ）</td><td>同じ損失+罰則（全項）</td><td>損失</td><td class="num">3補正式×3損失×2罰則 = 18</td></tr>
+            <tr><td><code>Loss</code></td><td>LAD / Huber / Huber</td><td>OLS / OLS / LAD（罰則の条件は同じ）</td><td>罰則の条件（なし、+L2(HO)、+L1(HO)、+L2(All)、+L1(All)）</td><td class="num">3×5×3 = 45</td></tr>
+            <tr><td><code>Penalty</code></td><td>損失+L2（対象）</td><td>同じ損失+L1（同じ対象）</td><td>損失</td><td class="num">3×3×2 = 18</td></tr>
+            <tr><td><code>Regularization</code></td><td>損失+罰則（4条件）</td><td>同じ損失の罰則なし</td><td>損失</td><td class="num">3×3×4 = 36</td></tr>
+            <tr><td><code>VIF</code></td><td>削減版（Nikon-VIF）の手法</td><td>元の式（Nikon）の同じ手法</td><td>損失</td><td class="num">15（削減版がある式だけ）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>1シナリオあたり132組、2シナリオで264行を <code>comparisons.csv</code> に書き出します。各組では、まとめたRMS（3.7節）を使って次を計算します。</p>
+      <div class="formula">
+        低減率 [%] = 100 × ( 1 − median(RMS<sub>A</sub>) / median(RMS<sub>B</sub>) )<br>
+        勝率 [%] = 100 × ( RMS<sub>A</sub>(<var>s</var>) &lt; RMS<sub>B</sub>(<var>s</var>) となるShotの割合 )
+        <span class="formula-note">低減率は「中央値どうしの比」で、Shotごとの差の中央値ではない。勝率は等しい場合を含めない</span>
+      </div>
+
+      <h3 id="runall-sweep">3.10 λの感度解析（sweep_lambda）</h3>
+      <ol class="flowchart">
+        <li><div class="node"><span class="node-label">準備</span><strong class="node-title">対象の手法を選ぶ</strong><span class="node-detail"><code>build_methods</code> の中から、損失がHuberで罰則ありの4手法（Huber+L2(HO)、Huber+L1(HO)、Huber+L2(All)、Huber+L1(All)）</span></div></li>
+        <li>
+          <div class="loop">
+            <span class="loop-label">繰り返し: 倍率（0.25, 0.5, 1, 2, 4, 8）→ 補正式（3）→ 手法（4）</span>
+            <ol class="flowchart">
+              <li><div class="node"><span class="node-label">1</span><strong class="node-title">dx と dy を回帰する</strong><span class="node-detail">異常値ありの測定値に、<code>λ1 × 倍率</code>、<code>λ2 × 倍率</code> で <code>fit_batch</code></span></div></li>
+              <li><div class="node output"><span class="node-label">2</span><strong class="node-title">まとめたRMSの中央値と95パーセンタイルを記録する</strong><span class="node-detail">例: <code>sweep x0.25 Nikon Huber+L1(HO) median = 0.150 nm</code></span></div></li>
+            </ol>
+          </div>
+        </li>
+      </ol>
+      <p><code>fit_batch</code> の呼び出しは 6×3×4×2 = 144回です。結果は <code>lambda_sweep.csv</code>（72行）に書き出します。</p>
+
+      <h3 id="runall-save">3.11 保存する</h3>
+      <p>次の変数を <code>results/simulation_results.mat</code> に保存します（8.2節）。このファイルはGitHubに登録していません。</p>
+      <p><code>cfg</code>, <code>geometry</code>, <code>variants</code>, <code>data</code>, <code>methods</code>, <code>methodNames</code>, <code>scenarioNames</code>, <code>axisNames</code>, <code>rmsTrue</code>, <code>rmsApparent</code>, <code>rawRms</code>, <code>floorRms</code>, <code>summaryTable</code>, <code>combinedTable</code>, <code>referenceTable</code>, <code>comparisonTable</code>, <code>sweepTable</code>, <code>vifTable</code></p>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-model">
+      <h2 id="sec-model">4. 補正式とVIF</h2>
+
+      <h3 id="model-terms">4.1 補正式の定義（model_terms.m）</h3>
+      <p>補正式は、露光機メーカーごとに定められたShot高次補正演算式です。項・係数番号・変数・符号を変えずに、指数 [m n] と係数番号の組として書いています。<var>x</var>, <var>y</var> はShot中心を原点とするマーク座標 [mm]、dx, dy は [nm] です。</p>
+      <div class="formula">
+        <strong>ASML式</strong><br>
+        dx = k1 + k3·<var>x</var> + k5·<var>y</var> + k7·<var>x</var><sup>2</sup> + k11·<var>y</var><sup>2</sup> + k13·<var>x</var><sup>3</sup> + k19·<var>y</var><sup>3</sup><br>
+        dy = k2 + k4·<var>y</var> + k6·<var>x</var> + k8·<var>y</var><sup>2</sup> + k10·<var>xy</var> + k12·<var>x</var><sup>2</sup> + k14·<var>y</var><sup>3</sup> + k16·<var>xy</var><sup>2</sup>
+      </div>
+      <div class="formula">
+        <strong>ニコン式</strong><br>
+        dx = k1 + k3·<var>x</var> + k5·<var>y</var> + k7·<var>x</var><sup>2</sup> + k9·<var>xy</var> + k11·<var>y</var><sup>2</sup> + k13·<var>x</var><sup>3</sup> + k17·<var>xy</var><sup>2</sup> + k19·<var>y</var><sup>3</sup> + k29·<var>y</var><sup>4</sup> + k41·<var>y</var><sup>5</sup> + k55·<var>y</var><sup>6</sup><br>
+        dy = k2 + k4·<var>y</var> + k6·<var>x</var> + k8·<var>y</var><sup>2</sup> + k10·<var>xy</var> + k12·<var>x</var><sup>2</sup> + k14·<var>y</var><sup>3</sup> + k16·<var>xy</var><sup>2</sup> + k18·<var>x</var><sup>2</sup><var>y</var> + k22·<var>y</var><sup>4</sup> + k24·<var>xy</var><sup>3</sup> + k32·<var>y</var><sup>5</sup> + k34·<var>xy</var><sup>4</sup> + k44·<var>y</var><sup>6</sup> + k46·<var>xy</var><sup>5</sup>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <caption>model_terms の呼び方</caption>
+          <thead>
+            <tr><th scope="col">引数</th><th scope="col">返す内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>'ASML'</code>, <code>'Nikon'</code></td><td><code>model.x.exp</code> / <code>model.y.exp</code>（指数）と <code>model.x.name</code> / <code>model.y.name</code>（係数番号）。k1〜k6 が線形成分（並進・倍率・回転）</td></tr>
+            <tr><td><code>'Truth'</code></td><td>ASML式とニコン式の指数の和集合（重複を除き、ASML式の順番を先にする）。名前は <code>monomial_label</code> で作る表示名</td></tr>
+            <tr><td>それ以外</td><td>エラー「未対応のモデル名です」</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>最後に、項の数と係数名の数が一致しているか確認し、違えばエラーにします。</p>
+
+      <h3 id="model-design">4.2 設計行列（design_matrix.m）</h3>
+      <div class="formula">
+        A<sub><var>ij</var></sub> = <var>x</var><sub><var>i</var></sub><sup>m<sub><var>j</var></sub></sup> · <var>y</var><sub><var>i</var></sub><sup>n<sub><var>j</var></sub></sup>
+        <span class="formula-note">行 i が点（マークまたは評価点）、列 j が項。x と y の点数が違うとエラー</span>
+      </div>
+      <p><code>monomial_label.m</code> は指数 [m n] から表示名（例: [2 1] → <code>x^{2}y</code>、[0 0] → <code>1</code>）を作ります。表と図のラベルに使います。</p>
+
+      <h3 id="model-vif">4.3 VIFの計算（compute_vif.m）</h3>
+      <ol class="flowchart">
+        <li><div class="node"><span class="node-label">1</span><strong class="node-title">列の大きさをそろえる</strong><span class="node-detail">各列を、その列の絶対値の最大値で割る。mm座標のべき乗は列ごとに桁が大きく違う（例: y<sup>6</sup> は約10<sup>7</sup>）ため。VIFは列を定数倍しても変わらない</span></div></li>
+        <li>
+          <div class="loop">
+            <span class="loop-label">繰り返し: 切片以外の項 j</span>
+            <ol class="flowchart">
+              <li><div class="node"><span class="node-label">2</span><strong class="node-title">項 j の列を、他のすべての列（切片を含む）で回帰する</strong><span class="node-detail">バックスラッシュ演算子で最小二乗解を求め、当てはめ値を計算する</span></div></li>
+              <li><div class="node output"><span class="node-label">3</span><strong class="node-title">VIFを求める</strong><span class="node-detail"><var>R</var><sup>2</sup> = 1 − 残差平方和 / 全平方和（平均からの偏差）、VIF = 1 / max(1 − <var>R</var><sup>2</sup>, eps)</span></div></li>
+            </ol>
+          </div>
+        </li>
+      </ol>
+      <p>切片のVIFは対象外なので NaN を返します。VIFはマーク配置と項の組だけで決まり、測定値には依存しません。</p>
+
+      <h3 id="model-reduce">4.4 VIFによる項の削除（reduce_terms_by_vif.m）</h3>
+      <p>切片と1次項（並進・倍率・回転）は削除しません（保護する項）。</p>
+      <ol class="flowchart">
+        <li><div class="node terminal"><span class="node-label">開始</span><strong class="node-title">すべての項を残す状態から始める</strong></div></li>
+        <li><div class="node"><span class="node-label">1</span><strong class="node-title">残している項だけでVIFを計算する</strong></div></li>
+        <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">すべてのVIFがしきい値（10）未満か</strong>
+          <div class="branch">
+            <div><span class="branch-label">はい</span>終了する</div>
+            <div><span class="branch-label">いいえ</span>次へ進む</div>
+          </div></div></li>
+        <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">保護する項以外に、VIFがしきい値以上の項があるか</strong>
+          <div class="branch">
+            <div><span class="branch-label">ある</span>その中で次数が最も高い項に絞り、さらにVIFが最大の項を選ぶ（y<sup>3</sup> を消して y<sup>6</sup> を残すような、多項式の階層に反する削除を避けるため）</div>
+            <div><span class="branch-label">ない</span>しきい値以上は1次項だけ。保護する項以外の中でVIFが最大の項（1次項と相関している高次項）を選ぶ</div>
+          </div></div></li>
+        <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">選んだ項のVIFが有限か</strong>
+          <div class="branch">
+            <div><span class="branch-label">はい</span>その項を削除し、番号と削除直前のVIFを記録して手順1に戻る</div>
+            <div><span class="branch-label">いいえ</span>削除できる高次項が残っていないので終了する</div>
+          </div></div></li>
+        <li><div class="node output"><span class="node-label">出力</span><strong class="node-title">keepMask と removalLog</strong><span class="node-detail"><code>keepMask</code>: 残す項なら true。<code>removalLog</code>: [削除した項の番号, 削除直前のVIF] を削除した順に並べたもの</span></div></li>
+      </ol>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-fit">
+      <h2 id="sec-fit">5. 回帰計算（fit_batch.m）</h2>
+
+      <h3 id="fit-io">5.1 入力と出力</h3>
+      <div class="table-scroll">
+        <table>
+          <caption>fit_batch(A, Y, method, isPenalized, lambdaL1, lambdaL2, cfg)</caption>
+          <thead>
+            <tr><th scope="col">引数・戻り値</th><th scope="col">大きさ</th><th scope="col">内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>A</code></td><td class="num">35×<var>p</var></td><td>標準化した設計行列（切片列を含む）</td></tr>
+            <tr><td><code>Y</code></td><td class="num">35×S</td><td>測定値 [nm]。1列が1 Shot</td></tr>
+            <tr><td><code>method</code></td><td>構造体</td><td><code>loss</code>（OLS / LAD / Huber）と <code>penalty</code>（none / L2 / L1）を使う</td></tr>
+            <tr><td><code>isPenalized</code></td><td class="num"><var>p</var>×1</td><td>罰則をかける項なら true</td></tr>
+            <tr><td><code>lambdaL1</code>, <code>lambdaL2</code></td><td>数値</td><td>罰則の強さ</td></tr>
+            <tr><td>戻り値 <code>theta</code></td><td class="num"><var>p</var>×S</td><td>標準化した列に対する係数</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>入力チェック: 損失や罰則の名前が対応外、<code>A</code> と <code>Y</code> のマーク数が違う、<code>isPenalized</code> の長さが項数と違う場合はエラーにします。</p>
+
+      <h3 id="fit-objective">5.2 目的関数</h3>
+      <p>Shotごとに次の目的関数を最小にします。<var>r</var><sub><var>i</var></sub> はマーク <var>i</var> の残差、<var>s</var> はそのShotの残差の尺度、<var>n</var> = 35 です。</p>
+      <div class="formula">
+        損失　OLS: (1/2<var>n</var>) Σ<sub><var>i</var></sub> <var>r</var><sub><var>i</var></sub><sup>2</sup>　　LAD: (1/<var>n</var>) Σ<sub><var>i</var></sub> <var>s</var>·|<var>r</var><sub><var>i</var></sub>|　　Huber: (1/<var>n</var>) Σ<sub><var>i</var></sub> <var>s</var><sup>2</sup>·ρ<sub><var>c</var></sub>(<var>r</var><sub><var>i</var></sub> / <var>s</var>)<br>
+        罰則　L2: (<var>λ</var><sub>2</sub>/2) Σ<sub><var>j</var>∈罰則項</sub> <var>θ</var><sub><var>j</var></sub><sup>2</sup>　　L1: <var>λ</var><sub>1</sub> Σ<sub><var>j</var>∈罰則項</sub> |<var>θ</var><sub><var>j</var></sub>|
+        <span class="formula-note">ρ<sub>c</sub>(u) = u²/2（|u| ≤ c）、c|u| − c²/2（|u| &gt; c）。LADとHuberは、重み付きの (1/2n) Σ w<sub>i</sub> r<sub>i</sub><sup>2</sup> を重みを更新しながら解き直して最小化する（IRLS）</span>
+      </div>
+
+      <h3 id="fit-flow">5.3 全体フロー</h3>
+      <ol class="flowchart">
+        <li><div class="node terminal"><span class="node-label">開始</span><strong class="node-title">入力をチェックする</strong></div></li>
+        <li><div class="node"><span class="node-label">1</span><strong class="node-title">初期解を求める</strong><span class="node-detail">全マークの重みを1にして <code>solve_weighted</code> を解く。OLSならこれが答え（OLS、OLS+L2、OLS+L1 の解）</span></div></li>
+        <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">損失はOLSか</strong>
+          <div class="branch">
+            <div><span class="branch-label">はい</span>初期解を返して終了する</div>
+            <div><span class="branch-label">いいえ（LAD・Huber）</span>IRLSに進む</div>
+          </div></div></li>
+        <li>
+          <div class="loop">
+            <span class="loop-label">繰り返し: IRLS（最大1000回）。対象は、まだ収束していないShotだけ</span>
+            <ol class="flowchart">
+              <li><div class="node"><span class="node-label">2</span><strong class="node-title">残差を計算する</strong><span class="node-detail"><code>residual = Y − A × theta</code>（対象のShotの列だけ）</span></div></li>
+              <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">反復回数は20回以下か</strong>
+                <div class="branch">
+                  <div><span class="branch-label">はい</span>尺度を更新する: <var>s</var> = max(1.4826 × median|<var>r</var> − median(<var>r</var>)|, eps)</div>
+                  <div><span class="branch-label">いいえ</span>尺度は前の値のまま（固定）</div>
+                </div></div></li>
+              <li><div class="node"><span class="node-label">3</span><strong class="node-title">重みを計算する</strong><span class="node-detail"><code>robust_weights</code>（5.4節）</span></div></li>
+              <li><div class="node"><span class="node-label">4</span><strong class="node-title">重み付きで解き直す</strong><span class="node-detail"><code>solve_weighted</code>。L1では、前の反復の係数を座標降下法の初期値にする（5.5節、5.6節）</span></div></li>
+              <li><div class="node"><span class="node-label">5</span><strong class="node-title">係数の変化を調べる</strong><span class="node-detail">Shotごとに max<sub>j</sub>|<var>θ</var><sub>新</sub> − <var>θ</var><sub>旧</sub>| を計算し、係数を更新する</span></div></li>
+              <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">20回を過ぎていて、変化が 1e−5 nm 未満か</strong>
+                <div class="branch">
+                  <div><span class="branch-label">はい</span>そのShotは収束。以後の反復から外す。全Shotが収束したら終了</div>
+                  <div><span class="branch-label">いいえ</span>次の反復も続ける</div>
+                </div></div></li>
+            </ol>
+          </div>
+        </li>
+        <li><div class="node output"><span class="node-label">終了</span><strong class="node-title">係数を返す</strong><span class="node-detail">1000回を過ぎても収束しないShotが残った場合は、個数と最大変化を警告に表示する（5.7節）</span></div></li>
+      </ol>
+
+      <h3 id="fit-irls">5.4 IRLSの重みと尺度（robust_weights）</h3>
+      <div class="table-scroll">
+        <table>
+          <caption>マーク i の重み（Shotごとの尺度 s を使う）</caption>
+          <thead>
+            <tr><th scope="col">損失</th><th scope="col">重み <var>w</var><sub><var>i</var></sub></th><th scope="col">考え方</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>LAD</td><td><var>s</var> / max(|<var>r</var><sub><var>i</var></sub>|, 0.1·<var>s</var>)</td><td>残差の絶対値の和を最小にする重み。残差がほぼ0の点で重みが無限大にならないよう、|r| の下限を 0.1·s にする（残差が s 程度の点の重みは1程度）</td></tr>
+            <tr><td>Huber</td><td>min(1, 1.345·<var>s</var> / |<var>r</var><sub><var>i</var></sub>|)</td><td>残差が 1.345·s 以下の点は重み1（最小二乗と同じ）、それより大きい点は残差に反比例して重みを下げる</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout point">
+        <span class="callout-label">ポイント</span>
+        <ul>
+          <li><strong>尺度を20回で固定する理由</strong>: 毎回更新すると、MADの値が隣り合う残差の間で行き来し、係数が振動して収束しないShotが出るためです。固定した後は凸な問題になり、反復は収束に向かいます。</li>
+          <li><strong>LADに尺度 s を掛ける理由</strong>: 残差が s 程度の点の重みを最小二乗法と同程度にそろえ、罰則の効き方を損失関数の間でそろえるためです。罰則がなければ s は解に影響しません。</li>
+          <li><strong>収束したShotを外す理由</strong>: 収束の遅い一部のShotのために、全Shotの計算が続くのを避けるためです。結果は、外さない場合と許容誤差の範囲で同じです（50 Shotで中央値252行が一致することを確認済み）。</li>
+        </ul>
+      </div>
+
+      <h3 id="fit-solve">5.5 最小二乗とL2（solve_weighted / weighted_least_squares）</h3>
+      <p><code>solve_weighted</code> は罰則の種類で分岐します。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>solve_weighted の分岐</caption>
+          <thead>
+            <tr><th scope="col">罰則</th><th scope="col">処理</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>none</td><td><code>weighted_least_squares</code>（罰則行なし）</td></tr>
+            <tr><td>L2</td><td>罰則行 √(<var>n</var>·<var>λ</var><sub>2</sub>)·diag(isPenalized) を加えて <code>weighted_least_squares</code></td></tr>
+            <tr><td>L1</td><td>初期値が渡されていなければ、罰則なしの重み付き最小二乗解を初期値にして <code>weighted_lasso</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>weighted_least_squares</code> は、Shotごとに次の連立方程式を最小二乗の意味で解きます（MATLABのバックスラッシュ演算子、QR分解）。</p>
+      <div class="formula">
+        [ √<var>w</var> ∘ A ; 罰則行 ] <var>θ</var> ≈ [ √<var>w</var> ∘ <var>y</var> ; 0 ]
+        <span class="formula-note">∘ は行ごとの掛け算。罰則行を足すと、残差の二乗和に n·λ2·Σθ<sub>j</sub><sup>2</sup> が加わり、(1/2n)Σw r<sup>2</sup> + (λ2/2)Σθ<sup>2</sup> の最小化と同じになる</span>
+      </div>
+
+      <h3 id="fit-lasso">5.6 L1（weighted_lasso: 座標降下法）</h3>
+      <ol class="flowchart">
+        <li><div class="node"><span class="node-label">1</span><strong class="node-title">Shotごとにグラム行列を作る</strong><span class="node-detail"><var>G</var> = A<sup>T</sup>WA / <var>n</var>（<var>p</var>×<var>p</var>）、<var>b</var> = A<sup>T</sup>W<var>y</var> / <var>n</var>。<var>G</var><var>θ</var> も計算しておく</span></div></li>
+        <li>
+          <div class="loop">
+            <span class="loop-label">繰り返し: 1周（最大20000周）。対象は、まだ収束していないShotだけ</span>
+            <div class="loop">
+              <span class="loop-label">繰り返し: 項 j = 1 … p（全Shotをまとめて更新）</span>
+              <ol class="flowchart">
+                <li><div class="node"><span class="node-label">2</span><strong class="node-title">項 j 以外で説明できない分を計算する</strong><span class="node-detail"><var>ρ</var> = <var>b</var><sub><var>j</var></sub> − (<var>Gθ</var>)<sub><var>j</var></sub> + <var>G</var><sub><var>jj</var></sub><var>θ</var><sub><var>j</var></sub></span></div></li>
+                <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">項 j は罰則をかける項か</strong>
+                  <div class="branch">
+                    <div><span class="branch-label">はい</span>ソフトしきい値処理: <var>θ</var><sub><var>j</var></sub> = sign(<var>ρ</var>)·max(|<var>ρ</var>| − <var>λ</var><sub>1</sub>, 0) / <var>G</var><sub><var>jj</var></sub></div>
+                    <div><span class="branch-label">いいえ</span><var>θ</var><sub><var>j</var></sub> = <var>ρ</var> / <var>G</var><sub><var>jj</var></sub></div>
+                  </div></div></li>
+                <li><div class="node"><span class="node-label">3</span><strong class="node-title">Gθ を差分で更新し、変化量を記録する</strong><span class="node-detail">Shotごとの変化量 = max<sub>j</sub> |Δ<var>θ</var><sub><var>j</var></sub>|·√<var>G</var><sub><var>jj</var></sub></span></div></li>
+              </ol>
+            </div>
+            <ol class="flowchart">
+              <li><div class="node decision"><span class="node-label">判定</span><strong class="node-title">1周の変化量が 1e−7 未満のShotがあるか</strong>
+                <div class="branch">
+                  <div><span class="branch-label">ある</span>そのShotの係数を確定し、グラム行列などの配列から外す。全Shotが収束したら終了</div>
+                  <div><span class="branch-label">ない</span>次の周へ</div>
+                </div></div></li>
+            </ol>
+          </div>
+        </li>
+        <li><div class="node output"><span class="node-label">終了</span><strong class="node-title">係数を返す</strong><span class="node-detail">20000周を過ぎても収束しないShotが残った場合は、個数と最大変化を警告に表示する</span></div></li>
+      </ol>
+
+      <h3 id="fit-warnings">5.7 収束の判定と警告</h3>
+      <div class="table-scroll">
+        <table>
+          <caption>fit_batch が出す警告</caption>
+          <thead>
+            <tr><th scope="col">警告</th><th scope="col">意味</th><th scope="col">影響の見方</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>「IRLS（手法名）が 1000 回で収束しなかったShotが N 個あります（最大変化 …）。」</td><td>LAD・Huberの反復が、N個のShotで上限に達した</td><td>1000 Shotの本計算（2026-09-15）では、LAD・LAD+L1で1回あたり最大16 Shot（1.6%）、Huberで最大4 Shotに出た。中央値や95パーセンタイルへの影響は小さいと考えられるが、そのShotの係数はわずかに未収束のまま使われる</td></tr>
+            <tr><td>「座標降下法が 20000 回で収束しなかったShotが N 個あります（最大変化 …）。」</td><td>L1の座標降下法が、N個のShotで上限に達した</td><td>1000 Shotの本計算では、1回あたり1〜5 Shotに出た。表示される最大変化を判定値 1e−7 と比べて、実質的に収束しているかを判断する</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-metrics">
+      <h2 id="sec-metrics">6. 評価指標</h2>
+      <div class="table-scroll">
+        <table>
+          <caption>指標と計算式</caption>
+          <thead>
+            <tr><th scope="col">指標</th><th scope="col">計算式</th><th scope="col">出力先</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>補正残差RMS（Shotごと・軸ごと）</td><td>√( 441点の平均 of (真の歪み − 補正値)<sup>2</sup> )。評価グリッドはShot全面</td><td><code>rmsTrue</code></td></tr>
+            <tr><td>見かけの残差RMS</td><td>√( 35マークの平均 of (測定値 − 補正値)<sup>2</sup> )。異常値を含むシナリオでは異常値も含む</td><td><code>rmsApparent</code></td></tr>
+            <tr><td>dx・dyをまとめたRMS</td><td>√( (RMS<sub>dx</sub><sup>2</sup> + RMS<sub>dy</sub><sup>2</sup>) / 2 )（Shotごと）</td><td><code>summary_combined.csv</code>、比較、感度解析、図3・図4</td></tr>
+            <tr><td>中央値・95パーセンタイル</td><td>1000 Shotの分布の <code>median</code>、<code>prctile(…, 95)</code></td><td>各CSV</td></tr>
+            <tr><td>|平均|+3σ</td><td>その条件・軸の全Shot・全評価点（441×1000個）の残差をまとめ、|平均| + 3×標準偏差</td><td><code>summary.csv</code></td></tr>
+            <tr><td>表現限界</td><td>雑音のない真の歪みを、評価グリッド全点で最小二乗法により当てはめた残差RMS</td><td><code>reference.csv</code></td></tr>
+            <tr><td>低減率</td><td>100 × (1 − 条件Aの中央値 / 条件Bの中央値)。正なら条件Aが優れる</td><td><code>comparisons.csv</code></td></tr>
+            <tr><td>勝率</td><td>100 × (条件Aの残差が条件Bより小さいShotの割合)</td><td><code>comparisons.csv</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout caution">
+        <span class="callout-label">注意</span>
+        <p>評価グリッドはShot端（|x| = 13 mm、|y| = 16.5 mm）まで含み、マーク（|x| ≤ 12 mm、|y| ≤ 15.5 mm）の外側では補正値が外挿になります。高次の項（y<sup>6</sup> など）は外側で値が急に大きくなるため、係数の誤差が補正残差に強く現れます。</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-outputs">
+      <h2 id="sec-outputs">7. 図と表の出力</h2>
+
+      <h3 id="outputs-figures">7.1 図（make_figures.m）</h3>
+      <p><code>results/simulation_results.mat</code> がなければエラーにします。図は300 dpiのPNGで <code>report/figures/</code> に保存します（MATLABのPDF出力はフォントが埋め込まれず、Overleafで文字が消えることがあるため）。文字化けを避けるため、図の中の文字は英語です。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>作る図</caption>
+          <thead>
+            <tr><th scope="col">ファイル（関数）</th><th scope="col">内容</th><th scope="col">使うデータ</th><th scope="col">大きさ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>fig_shot_example.png</code>（plot_shot_example）</td><td>(a) 真の歪み（評価グリッドを1点おきに矢印表示）とマーク配置、(b) マーク位置の測定値（異常値のマークは赤）。矢印は 1 nm を 0.6 mm で描き、2 nm の目盛りを付ける</td><td>異常マークを1つ以上含む最初のShot</td><td>16×8.5 cm</td></tr>
+            <tr><td><code>fig_vif.png</code>（plot_vif）</td><td>ASML式・ニコン式の dx・dy ごとに、項のVIFの棒グラフ（縦軸は対数）。青は残した項、橙は削除した項（#は削除した順番）、破線はしきい値</td><td><code>vifTable</code></td><td>16×11 cm</td></tr>
+            <tr><td><code>fig_residual_box.png</code>（plot_residual_box）</td><td>補正式ごとに1段、15手法の補正残差の箱ひげ図（縦軸は対数、0.05〜3 nm）。箱の色は罰則の対象（灰: なし、緑: 高次項のみ、紫: 全項）。損失関数の境目に縦線</td><td>異常値ありの <code>rmsTrue</code>（dx・dyをまとめた値）</td><td>16×19 cm</td></tr>
+            <tr><td><code>fig_lambda_sweep.png</code>（plot_lambda_sweep）</td><td>補正式ごとに1枚。λの倍率（横軸は対数）に対する残差の中央値。橙はL1、青はL2、実線は高次項のみ、破線は全項、灰色の点線は罰則なしのHuber。縦軸は3枚でそろえる</td><td><code>sweepTable</code>、異常値ありのHuberの <code>rmsTrue</code></td><td>16×8.5 cm</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="outputs-tables">7.2 表の行（write_tex_tables.m）</h3>
+      <p>LaTeXの <code>tabular</code> 環境にそのまま貼れる行を <code>results/tex/</code> に書き出します。数値を手で打ち直さないので、転記ミスを防げます。</p>
+      <div class="table-scroll">
+        <table>
+          <caption>出力する表の行</caption>
+          <thead>
+            <tr><th scope="col">ファイル</th><th scope="col">列</th><th scope="col">元のデータ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>rows_summary_outlier.tex</code></td><td>手法 | 罰則の対象 | 補正式ごとに（中央値 | 95パーセンタイル）</td><td><code>combinedTable</code>（異常値あり）</td></tr>
+            <tr><td><code>rows_summary_clean.tex</code></td><td>手法 | 罰則の対象 | 補正式ごとに（中央値 | 見かけの残差の中央値）</td><td><code>combinedTable</code>（異常値なし）</td></tr>
+            <tr><td><code>rows_scope_*.tex</code>、<code>rows_loss_*.tex</code>、<code>rows_penalty_*.tex</code>、<code>rows_regularization_*.tex</code></td><td>条件A | 条件B | 補正式ごとに（低減率 | 勝率）。区分が変わる所に罫線</td><td><code>comparisonTable</code> の各Group（* は outlier / clean）</td></tr>
+            <tr><td><code>rows_vif_effect_*.tex</code></td><td>補正式 | 手法 | 罰則の対象 | 削除前の中央値 | 削除後の中央値 | 低減率 | 勝率</td><td><code>comparisonTable</code> の VIF</td></tr>
+            <tr><td><code>rows_vif.tex</code></td><td>補正式 | 軸 | 項数（前→後） | 削除した項（削除した順、なければ「なし」） | 最大VIF（前） | 最大VIF（後）</td><td><code>vifTable</code></td></tr>
+            <tr><td><code>rows_reference.tex</code></td><td>条件 | dx中央値 | dx 95% | dy中央値 | dy 95%</td><td><code>referenceTable</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>残差の表で太字にするのは、補正式ごとに中央値が最小の手法です（小数点以下3桁で比べる）。</li>
+        <li>手法名の表示は、<code>Huber+L2(HO)</code> を「Huber+L2」と「高次項」、<code>Huber+L2(All)</code> を「Huber+L2」と「全項」に分けます。比較の表では「Huber+L2（高次項）」のように書きます。</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-data">
+      <h2 id="sec-data">8. 出力ファイルとデータ構造</h2>
+
+      <h3 id="data-csv">8.1 CSVファイル（results/）</h3>
+      <div class="table-scroll">
+        <table>
+          <caption>CSVファイルの列</caption>
+          <thead>
+            <tr><th scope="col">ファイル</th><th scope="col">行数</th><th scope="col">列</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>vif_table.csv</code></td><td class="num">42</td><td>Model, Axis, Term（係数番号）, Monomial, Order（次数）, VIF, Kept（1: 残す）, RemovalOrder（0: 削除なし）, VIFAfter</td></tr>
+            <tr><td><code>summary.csv</code></td><td class="num">180</td><td>Scenario, Model, Method, Loss, Penalty, Scope, Axis, TermCount, MedianRmsNm, P95RmsNm, MeanPlus3SigmaNm, MedianApparentRmsNm</td></tr>
+            <tr><td><code>summary_combined.csv</code></td><td class="num">90</td><td>Scenario, Model, Method, Loss, Penalty, Scope, MedianRmsNm, P95RmsNm, MedianApparentRmsNm</td></tr>
+            <tr><td><code>reference.csv</code></td><td class="num">8</td><td>Condition（NoCorrection / Floor_補正式名）, Axis, MedianRmsNm, P95RmsNm</td></tr>
+            <tr><td><code>comparisons.csv</code></td><td class="num">264</td><td>Scenario, Group, Block, ModelA, MethodA, ModelB, MethodB, MedianA_nm, MedianB_nm, MedianReductionPercent, WinRateA_percent</td></tr>
+            <tr><td><code>lambda_sweep.csv</code></td><td class="num">72</td><td>LambdaScale, Model, Method, Penalty, Scope, MedianRmsNm, P95RmsNm</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>Scenario</code> は outlier（異常値あり）/ clean（異常値なし）、<code>Scope</code> は none / HO / All です。RMS の単位はすべて nm です。</p>
+
+      <h3 id="data-mat">8.2 保存する変数（simulation_results.mat）</h3>
+      <div class="table-scroll">
+        <table>
+          <caption>simulation_results.mat の変数</caption>
+          <thead>
+            <tr><th scope="col">変数</th><th scope="col">型・大きさ</th><th scope="col">内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>cfg</code></td><td>構造体</td><td>実験条件（2章）。<code>shotCount</code> は実行時の値</td></tr>
+            <tr><td><code>geometry</code></td><td>構造体</td><td>マーク座標と評価グリッド（3.2節）</td></tr>
+            <tr><td><code>variants</code></td><td>構造体配列（3）</td><td><code>name</code> と、軸ごとの設計 <code>x</code> / <code>y</code>（3.3節）</td></tr>
+            <tr><td><code>data</code></td><td>構造体</td><td>真の歪みと測定値（3.4節）</td></tr>
+            <tr><td><code>methods</code> / <code>methodNames</code></td><td>構造体配列（15）/ cell</td><td>回帰手法（3.5節）</td></tr>
+            <tr><td><code>scenarioNames</code> / <code>axisNames</code></td><td>cell</td><td>{'outlier', 'clean'} / {'x', 'y'}</td></tr>
+            <tr><td><code>rmsTrue</code> / <code>rmsApparent</code></td><td>cell（2×3×15×2）</td><td>{シナリオ, 補正式, 手法, 軸} ごとの 1×S のRMS</td></tr>
+            <tr><td><code>rawRms</code></td><td>cell（1×2）</td><td>軸ごとの補正なしRMS（1×S）</td></tr>
+            <tr><td><code>floorRms</code></td><td>cell（3×2）</td><td>{補正式, 軸} ごとの表現限界（1×S）</td></tr>
+            <tr><td><code>summaryTable</code> ほか</td><td>table</td><td>8.1節のCSVと同じ内容（<code>summaryTable</code>, <code>combinedTable</code>, <code>referenceTable</code>, <code>comparisonTable</code>, <code>sweepTable</code>, <code>vifTable</code>）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section aria-labelledby="sec-cost">
+      <h2 id="sec-cost">9. 計算量と注意点</h2>
+      <div class="table-scroll">
+        <table>
+          <caption>fit_batch の呼び出し回数（1回で全Shotを処理する）</caption>
+          <thead>
+            <tr><th scope="col">場所</th><th scope="col">回数</th><th scope="col">内訳</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>回帰と評価のループ（3.6節）</td><td class="num">180</td><td>シナリオ2 × 補正式3 × 軸2 × 手法15</td></tr>
+            <tr><td>λの感度解析（3.10節）</td><td class="num">144</td><td>倍率6 × 補正式3 × 手法4 × 軸2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>時間がかかるのは、L1の座標降下法と、LADのIRLS（収束に数百回かかるShotがある）です。OLSとL2は1回の連立方程式で解けるため速く終わります。</li>
+        <li>参考: このMacでの所要時間は、<code>run_all</code>（1000 Shot、λの感度解析を含む）が556.9秒（約9分）、<code>run_all(50)</code> が約46秒でした（2026-09-15 計測。図と表の出力を除く）。所要時間はShot数に比例するとは限りません。</li>
+        <li>回帰計算そのものに乱数は使いません。乱数を使うのは <code>generate_shots</code> だけなので、条件を変えなければ毎回同じ結果になります。Shot数や真の歪みの項を変えると、乱数を使う量が変わり、別のShotが生成されます。</li>
+        <li><code>run_all(50)</code> で動作確認しても、<code>results/</code> の結果は上書きされます。確認のあとは1000 Shotで計算し直してください。</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<button type="button" id="to-top" aria-label="ページの先頭へ戻る">
+  <span aria-hidden="true">↑</span><span>トップへ</span>
+</button>
+
+<script>
+  (function () {
+    "use strict";
+
+    var TO_TOP_SHOW_OFFSET_PX = 400;
+    var ACTIVE_HEADING_OFFSET_PX = 120;
+    var NARROW_SCREEN_QUERY = "(max-width: 960px)";
+
+    var body = document.body;
+    var toc = document.getElementById("toc");
+    var tocToggle = document.getElementById("toc-toggle");
+    var tocClose = document.getElementById("toc-close");
+    var tocBackdrop = document.getElementById("toc-backdrop");
+    var toTop = document.getElementById("to-top");
+    var mainTitle = document.getElementById("main-title");
+    var narrowScreen = window.matchMedia(NARROW_SCREEN_QUERY);
+
+    /* ---- 目次の開閉（狭い画面） ---- */
+    function openToc() {
+      body.classList.add("toc-open");
+      tocToggle.setAttribute("aria-expanded", "true");
+      tocClose.focus();
+    }
+
+    function closeToc(returnFocus) {
+      if (!body.classList.contains("toc-open")) { return; }
+      body.classList.remove("toc-open");
+      tocToggle.setAttribute("aria-expanded", "false");
+      if (returnFocus) { tocToggle.focus(); }
+    }
+
+    tocToggle.addEventListener("click", function () {
+      if (body.classList.contains("toc-open")) { closeToc(true); } else { openToc(); }
+    });
+    tocClose.addEventListener("click", function () { closeToc(true); });
+    tocBackdrop.addEventListener("click", function () { closeToc(true); });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { closeToc(true); }
+    });
+    toc.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        if (narrowScreen.matches) { closeToc(false); }
+      });
+    });
+
+    /* ---- ページ内リンク ----
+       表示方法（プレビュー画面など）によっては #リンクで移動しないことがあるため、スクリプトで確実に移動させる。
+       移動先の見出しへフォーカスも移し、キーボード操作でも続きから読めるようにする。 */
+    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function scrollToSection(target) {
+      target.scrollIntoView({ behavior: reducedMotion.matches ? "auto" : "smooth", block: "start" });
+      if (!target.hasAttribute("tabindex")) { target.setAttribute("tabindex", "-1"); }
+      target.focus({ preventScroll: true });
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        var target = document.getElementById(link.getAttribute("href").slice(1));
+        if (!target) { return; }
+        event.preventDefault();
+        scrollToSection(target);
+        try {
+          history.replaceState(null, "", "#" + target.id);
+        } catch (error) {
+          /* 履歴を更新できない表示方法でも、移動そのものは完了している */
+        }
+      });
+    });
+
+    /* ---- 現在読んでいる章を目次で強調する ---- */
+    var tocLinks = Array.prototype.slice.call(toc.querySelectorAll('a[href^="#"]'));
+    var headings = tocLinks
+      .map(function (link) { return document.getElementById(link.getAttribute("href").slice(1)); })
+      .filter(function (element) { return element !== null; });
+
+    function updateActiveLink() {
+      var activeId = headings.length > 0 ? headings[0].id : "";
+      headings.forEach(function (heading) {
+        if (heading.getBoundingClientRect().top <= ACTIVE_HEADING_OFFSET_PX) { activeId = heading.id; }
+      });
+      tocLinks.forEach(function (link) {
+        if (link.getAttribute("href") === "#" + activeId) {
+          link.setAttribute("aria-current", "true");
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    }
+
+    /* ---- トップへ戻るボタン ---- */
+    function updateToTop() {
+      toTop.classList.toggle("is-visible", window.scrollY > TO_TOP_SHOW_OFFSET_PX);
+    }
+
+    toTop.addEventListener("click", function () {
+      window.scrollTo({ top: 0 });
+      mainTitle.focus({ preventScroll: true });
+    });
+
+    var ticking = false;
+    window.addEventListener("scroll", function () {
+      if (ticking) { return; }
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        updateActiveLink();
+        updateToTop();
+        ticking = false;
+      });
+    }, { passive: true });
+    updateActiveLink();
+    updateToTop();
+  })();
+</script>
+</body>
+</html>
